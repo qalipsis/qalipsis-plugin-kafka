@@ -1,0 +1,13 @@
+events:
+  export:
+    kafka:
+      enabled: false
+      min-level: trace
+      bootstrap: my-host:6542,other-host:2565
+      duration-as-nano: true
+      linger-period: 30s
+      batch-size: 100
+      topic: the-events
+      configuration:
+        config1: value1
+        config2: value2

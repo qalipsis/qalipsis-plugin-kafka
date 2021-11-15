@@ -1,0 +1,6 @@
+server:
+  port: ${random.port}
+
+logging:
+  console: true
+  root: info
