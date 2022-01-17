@@ -1,0 +1,11 @@
+meters:
+  kafka:
+    enabled: false
+    step: PT10S
+    topic: qalipsis-meters
+    linger.ms: 1000
+
+    configuration:
+      delivery.timeout.ms: 10000
+
+  bootstrap.servers: localhost:9092
