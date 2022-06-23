@@ -23,16 +23,17 @@ import io.qalipsis.api.steps.datasource.IterativeDatasourceStep
 import io.qalipsis.api.steps.datasource.processors.NoopDatasourceObjectProcessor
 import io.qalipsis.test.assertk.prop
 import io.qalipsis.test.assertk.typedProp
+import io.qalipsis.test.coroutines.TestDispatcherProvider
 import io.qalipsis.test.mockk.relaxedMockk
 import io.qalipsis.test.mockk.verifyOnce
 import io.qalipsis.test.steps.AbstractStepSpecificationConverterTest
-import kotlinx.coroutines.test.runBlockingTest
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.consumer.ConsumerRecords
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.apache.kafka.common.serialization.Serdes
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.RegisterExtension
 import java.time.Duration
 import java.util.Properties
 import java.util.regex.Pattern
@@ -45,6 +46,10 @@ import java.util.regex.Pattern
 internal class KafkaConsumerStepSpecificationConverterTest :
     AbstractStepSpecificationConverterTest<KafkaConsumerStepSpecificationConverter>() {
 
+    @JvmField
+    @RegisterExtension
+    val testDispatcherProvider = TestDispatcherProvider()
+
     @Test
     override fun `should not support unexpected spec`() {
         Assertions.assertFalse(converter.support(relaxedMockk()))
@@ -56,17 +61,18 @@ internal class KafkaConsumerStepSpecificationConverterTest :
     }
 
     @Test
-    internal fun `should convert spec with name and list of topics and generate a batch output`() = runBlockingTest {
-        // given
-        val keyDeserializer = Serdes.ByteArray().deserializer()
-        val valueDeserializer = Serdes.ByteArray().deserializer()
-        val spec = KafkaConsumerStepSpecification(keyDeserializer, valueDeserializer)
-        spec.apply {
-            name = "my-step"
-            bootstrap("my-bootstrap")
-            concurrency(2)
-            topics("topic-1", "topic-2")
-            pollTimeout(3)
+    internal fun `should convert spec with name and list of topics and generate a batch output`() =
+        testDispatcherProvider.runTest {
+            // given
+            val keyDeserializer = Serdes.ByteArray().deserializer()
+            val valueDeserializer = Serdes.ByteArray().deserializer()
+            val spec = KafkaConsumerStepSpecification(keyDeserializer, valueDeserializer)
+            spec.apply {
+                name = "my-step"
+                bootstrap("my-bootstrap")
+                concurrency(2)
+                topics("topic-1", "topic-2")
+                pollTimeout(3)
             maxPolledRecords(4)
             groupId("my-group")
             offsetReset(OffsetResetStrategy.EARLIEST)
@@ -92,9 +98,9 @@ internal class KafkaConsumerStepSpecificationConverterTest :
         // then
         creationContext.createdStep!!.let {
             assertThat(it).isInstanceOf(IterativeDatasourceStep::class).all {
-                prop("id").isEqualTo("my-step")
+                prop("name").isEqualTo("my-step")
                 prop("reader").isNotNull().isInstanceOf(KafkaConsumerIterativeReader::class).all {
-                    prop("stepId").isEqualTo("my-step")
+                    prop("stepName").isEqualTo("my-step")
                     typedProp<Properties>("props").all {
                         hasSize(7)
                         key(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG).isEqualTo("my-bootstrap")
@@ -117,17 +123,18 @@ internal class KafkaConsumerStepSpecificationConverterTest :
     }
 
     @Test
-    internal fun `should convert spec without name but a topic pattern and generate a flat output`() = runBlockingTest {
-        // given
-        val keyDeserializer = Serdes.ByteArray().deserializer()
-        val valueDeserializer = Serdes.ByteArray().deserializer()
-        val spec = KafkaConsumerStepSpecification(keyDeserializer, valueDeserializer)
-        spec.apply {
-            topicsPattern(Pattern.compile(".*"))
-            offsetReset(OffsetResetStrategy.NONE)
-            (getProperty("configuration") as KafkaConsumerConfiguration<*, *>).flattenOutput = true
-        }
-        val creationContext = StepCreationContextImpl(scenarioSpecification, directedAcyclicGraph, spec)
+    internal fun `should convert spec without name but a topic pattern and generate a flat output`() =
+        testDispatcherProvider.runTest {
+            // given
+            val keyDeserializer = Serdes.ByteArray().deserializer()
+            val valueDeserializer = Serdes.ByteArray().deserializer()
+            val spec = KafkaConsumerStepSpecification(keyDeserializer, valueDeserializer)
+            spec.apply {
+                topicsPattern(Pattern.compile(".*"))
+                offsetReset(OffsetResetStrategy.NONE)
+                (getProperty("configuration") as KafkaConsumerConfiguration<*, *>).flattenOutput = true
+            }
+            val creationContext = StepCreationContextImpl(scenarioSpecification, directedAcyclicGraph, spec)
         val spiedConverter = spyk(converter, recordPrivateCalls = true)
         val recordsConverter: DatasourceObjectConverter<ConsumerRecords<ByteArray?, ByteArray?>, out Any?> =
             relaxedMockk()
@@ -152,9 +159,9 @@ internal class KafkaConsumerStepSpecificationConverterTest :
         }
         creationContext.createdStep!!.let { step ->
             assertThat(step).isInstanceOf(IterativeDatasourceStep::class).all {
-                prop("id").isNotNull()
+                prop("name").isNotNull()
                 prop("reader").isNotNull().isInstanceOf(KafkaConsumerIterativeReader::class).all {
-                    prop("stepId").isEqualTo(step.id)
+                    prop("stepName").isEqualTo(step.name)
                     typedProp<Properties>("props").all {
                         hasSize(4)
                         key(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG).isEqualTo("localhost:9092")

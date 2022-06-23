@@ -15,19 +15,24 @@ import io.qalipsis.api.context.StepContext
 import io.qalipsis.api.steps.DummyStepSpecification
 import io.qalipsis.api.steps.StepMonitoringConfiguration
 import io.qalipsis.plugins.kafka.kafka
+import io.qalipsis.test.coroutines.TestDispatcherProvider
 import io.qalipsis.test.mockk.relaxedMockk
-import kotlinx.coroutines.test.runBlockingTest
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.Serializer
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.RegisterExtension
 
 /**
  * @author Gabriel Moraes
  */
 internal class KafkaProducerStepSpecificationImplTest {
 
+    @JvmField
+    @RegisterExtension
+    val testDispatcherProvider = TestDispatcherProvider()
+
     @Test
-    fun `should add minimal configuration for the step`() = runBlockingTest {
+    fun `should add minimal configuration for the step`() = testDispatcherProvider.runTest {
         val previousStep = DummyStepSpecification()
         val keySerializer = relaxedMockk<Serializer<Any>>()
         val valueSerializer = relaxedMockk<Serializer<Any>>()
@@ -68,7 +73,7 @@ internal class KafkaProducerStepSpecificationImplTest {
 
 
     @Test
-    fun `should add a complete configuration for the step`() = runBlockingTest {
+    fun `should add a complete configuration for the step`() = testDispatcherProvider.runTest {
         val previousStep = DummyStepSpecification()
         val keySerializer = relaxedMockk<Serializer<Any>>()
         val valueSerializer = relaxedMockk<Serializer<Any>>()

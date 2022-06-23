@@ -1,6 +1,6 @@
 package io.qalipsis.plugins.kafka.consumer
 
-import io.qalipsis.api.context.StepId
+import io.qalipsis.api.context.StepName
 import io.qalipsis.api.context.StepStartStopContext
 import io.qalipsis.api.logging.LoggerHelper.logger
 import io.qalipsis.api.steps.datasource.DatasourceIterativeReader
@@ -27,7 +27,7 @@ import javax.validation.constraints.Positive
  * @author Eric Jessé
  */
 internal class KafkaConsumerIterativeReader(
-    private val stepId: StepId,
+    private val stepName: StepName,
     private val props: Properties,
     @Positive private val pollTimeout: Duration,
     @Positive private val concurrency: Int,
@@ -54,7 +54,7 @@ internal class KafkaConsumerIterativeReader(
             try {
                 startConsumer(index)
             } catch (e: Exception) {
-                log.error(e) { "An error occurred in the step $stepId while starting the consumer: ${e.message}" }
+                log.error(e) { "An error occurred in the step $stepName while starting the consumer: ${e.message}" }
                 throw e
             }
         }
@@ -67,7 +67,7 @@ internal class KafkaConsumerIterativeReader(
         if (props.containsKey(ConsumerConfig.CLIENT_ID_CONFIG)) {
             threadsProperties[ConsumerConfig.CLIENT_ID_CONFIG] = "${props[ConsumerConfig.CLIENT_ID_CONFIG]}"
         } else {
-            threadsProperties[ConsumerConfig.CLIENT_ID_CONFIG] = "qalipsis-step-$stepId"
+            threadsProperties[ConsumerConfig.CLIENT_ID_CONFIG] = "qalipsis-step-$stepName"
         }
 
         if (concurrency > 1) {
@@ -103,7 +103,7 @@ internal class KafkaConsumerIterativeReader(
             } catch (e: WakeupException) {
                 // Ignore for shutdown.
             } catch (e: Exception) {
-                log.error(e) { "An error occurred in the step $stepId: ${e.message}" }
+                log.error(e) { "An error occurred in the step $stepName: ${e.message}" }
             } finally {
                 log.debug { "Closing the polling loop for client ${threadsProperties[ConsumerConfig.CLIENT_ID_CONFIG]}" }
                 try {
@@ -117,7 +117,7 @@ internal class KafkaConsumerIterativeReader(
     }
 
     override fun stop(context: StepStartStopContext) {
-        log.debug { "Stopping the Kafka consumer for step $stepId" }
+        log.debug { "Stopping the Kafka consumer for step $stepName" }
         running = false
         // Sends a wake-up event in order to trigger the close of the consumer in its own thread.
         consumers.forEach { it.wakeup() }
@@ -127,7 +127,7 @@ internal class KafkaConsumerIterativeReader(
             2 * (pollTimeout.toMillis() + CLOSE_TIMEOUT.toMillis()),
             TimeUnit.MILLISECONDS
         )
-        log.debug { "Kafka consumer for step $stepId was stopped" }
+        log.debug { "Kafka consumer for step $stepName was stopped" }
     }
 
     override suspend fun hasNext(): Boolean {

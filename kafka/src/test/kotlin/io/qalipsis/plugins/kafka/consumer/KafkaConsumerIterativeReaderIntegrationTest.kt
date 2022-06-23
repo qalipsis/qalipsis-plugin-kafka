@@ -8,9 +8,9 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.prop
 import io.qalipsis.api.logging.LoggerHelper.logger
 import io.qalipsis.plugins.kafka.Constants
+import io.qalipsis.test.coroutines.TestDispatcherProvider
 import io.qalipsis.test.mockk.relaxedMockk
 import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.clients.admin.AdminClientConfig
@@ -23,6 +23,7 @@ import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization.Serdes
 import org.junit.jupiter.api.*
+import org.junit.jupiter.api.extension.RegisterExtension
 import org.testcontainers.containers.KafkaContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
@@ -39,6 +40,10 @@ import kotlin.math.pow
  */
 @Testcontainers
 internal class KafkaConsumerIterativeReaderIntegrationTest {
+
+    @JvmField
+    @RegisterExtension
+    val testDispatcherProvider = TestDispatcherProvider()
 
     private val bootstrap by lazy(LazyThreadSafetyMode.NONE) {
         container.bootstrapServers.substring("PLAINTEXT://".length)
@@ -81,6 +86,7 @@ internal class KafkaConsumerIterativeReaderIntegrationTest {
     internal fun tearDown() {
         reader.stop(relaxedMockk())
 
+        Thread.sleep(500)
         adminClient.deleteTopics(adminClient.listTopics().names().get())
 
         // Wait until the topics are actually deleted.
@@ -94,7 +100,7 @@ internal class KafkaConsumerIterativeReaderIntegrationTest {
 
     private fun createTopics(topics: Collection<String>) {
         log.info { "Creating topics ${topics.joinToString(", ")}" }
-        adminClient.createTopics(topics.map { NewTopic(it, 1, 1) }).all().get()
+        adminClient.createTopics(topics.distinct().map { NewTopic(it, 1, 1) }).all().get()
 
         // Wait until the topics are actually created.
         while (!adminClient.listTopics().names().get().also {
@@ -108,18 +114,18 @@ internal class KafkaConsumerIterativeReaderIntegrationTest {
 
     @Test
     @Timeout(10)
-    internal fun `should consume all the data from subscribed topics only`() = runBlocking {
+    internal fun `should consume all the data from subscribed topics only`() = testDispatcherProvider.run {
         // given
-        createTopics((1..10).map { "topic-$it" })
+        createTopics((1..10).map { "topic-A-$it" })
         (1..10).forEach {
-            kafkaProducer.send(ProducerRecord("topic-$it", "key-$it", "value-$it"))
+            kafkaProducer.send(ProducerRecord("topic-A-$it", "key-$it", "value-$it"))
         }
         reader = KafkaConsumerIterativeReader(
             "any",
             consumerConfig,
             Duration.ofMillis(100),
             1,
-            listOf("topic-5", "topic-8"),
+            listOf("topic-A-5", "topic-A-8"),
             null
         )
         reader.start(relaxedMockk())
@@ -135,7 +141,7 @@ internal class KafkaConsumerIterativeReaderIntegrationTest {
         assertThat(received).transform { it.sortedBy { it.topic() } }.all {
             hasSize(2)
             index(0).all {
-                prop(ConsumerRecord<ByteArray?, ByteArray?>::topic).isEqualTo("topic-5")
+                prop(ConsumerRecord<ByteArray?, ByteArray?>::topic).isEqualTo("topic-A-5")
                 prop(ConsumerRecord<ByteArray?, ByteArray?>::partition).isEqualTo(0)
                 prop(ConsumerRecord<ByteArray?, ByteArray?>::key).transform { it!!.toString(StandardCharsets.UTF_8) }
                     .isEqualTo("key-5")
@@ -143,7 +149,7 @@ internal class KafkaConsumerIterativeReaderIntegrationTest {
                     .isEqualTo("value-5")
             }
             index(1).all {
-                prop(ConsumerRecord<ByteArray?, ByteArray?>::topic).isEqualTo("topic-8")
+                prop(ConsumerRecord<ByteArray?, ByteArray?>::topic).isEqualTo("topic-A-8")
                 prop(ConsumerRecord<ByteArray?, ByteArray?>::partition).isEqualTo(0)
                 prop(ConsumerRecord<ByteArray?, ByteArray?>::key).transform { it!!.toString(StandardCharsets.UTF_8) }
                     .isEqualTo("key-8")
@@ -162,11 +168,11 @@ internal class KafkaConsumerIterativeReaderIntegrationTest {
 
     @Test
     @Timeout(10)
-    internal fun `should consume all the data from subscribed topics pattern only`() = runBlocking {
+    internal fun `should consume all the data from subscribed topics pattern only`() = testDispatcherProvider.run {
         // given
-        createTopics((1..20).map { "topic-$it" })
+        createTopics((1..20).map { "topic-B-$it" })
         (1..20).forEach {
-            kafkaProducer.send(ProducerRecord("topic-$it", "key-$it", "value-$it"))
+            kafkaProducer.send(ProducerRecord("topic-B-$it", "key-$it", "value-$it"))
         }
         reader = KafkaConsumerIterativeReader(
             "any",
@@ -174,7 +180,7 @@ internal class KafkaConsumerIterativeReaderIntegrationTest {
             Duration.ofMillis(100),
             1,
             emptyList(),
-            Pattern.compile("[tT]o.ic-1[2-4]?")
+            Pattern.compile("[tT]o.ic-B-1[2-4]?")
         )
         reader.start(relaxedMockk())
 
@@ -189,7 +195,7 @@ internal class KafkaConsumerIterativeReaderIntegrationTest {
         assertThat(received).transform { it.sortedBy { it.topic() } }.all {
             hasSize(4)
             index(0).all {
-                prop(ConsumerRecord<ByteArray?, ByteArray?>::topic).isEqualTo("topic-1")
+                prop(ConsumerRecord<ByteArray?, ByteArray?>::topic).isEqualTo("topic-B-1")
                 prop(ConsumerRecord<ByteArray?, ByteArray?>::partition).isEqualTo(0)
                 prop(ConsumerRecord<ByteArray?, ByteArray?>::key).transform { it!!.toString(StandardCharsets.UTF_8) }
                     .isEqualTo("key-1")
@@ -197,7 +203,7 @@ internal class KafkaConsumerIterativeReaderIntegrationTest {
                     .isEqualTo("value-1")
             }
             index(1).all {
-                prop(ConsumerRecord<ByteArray?, ByteArray?>::topic).isEqualTo("topic-12")
+                prop(ConsumerRecord<ByteArray?, ByteArray?>::topic).isEqualTo("topic-B-12")
                 prop(ConsumerRecord<ByteArray?, ByteArray?>::partition).isEqualTo(0)
                 prop(ConsumerRecord<ByteArray?, ByteArray?>::key).transform { it!!.toString(StandardCharsets.UTF_8) }
                     .isEqualTo("key-12")
@@ -205,7 +211,7 @@ internal class KafkaConsumerIterativeReaderIntegrationTest {
                     .isEqualTo("value-12")
             }
             index(2).all {
-                prop(ConsumerRecord<ByteArray?, ByteArray?>::topic).isEqualTo("topic-13")
+                prop(ConsumerRecord<ByteArray?, ByteArray?>::topic).isEqualTo("topic-B-13")
                 prop(ConsumerRecord<ByteArray?, ByteArray?>::partition).isEqualTo(0)
                 prop(ConsumerRecord<ByteArray?, ByteArray?>::key).transform { it!!.toString(StandardCharsets.UTF_8) }
                     .isEqualTo("key-13")
@@ -213,7 +219,7 @@ internal class KafkaConsumerIterativeReaderIntegrationTest {
                     .isEqualTo("value-13")
             }
             index(3).all {
-                prop(ConsumerRecord<ByteArray?, ByteArray?>::topic).isEqualTo("topic-14")
+                prop(ConsumerRecord<ByteArray?, ByteArray?>::topic).isEqualTo("topic-B-14")
                 prop(ConsumerRecord<ByteArray?, ByteArray?>::partition).isEqualTo(0)
                 prop(ConsumerRecord<ByteArray?, ByteArray?>::key).transform { it!!.toString(StandardCharsets.UTF_8) }
                     .isEqualTo("key-14")
@@ -232,7 +238,7 @@ internal class KafkaConsumerIterativeReaderIntegrationTest {
 
     @Test
     @Timeout(10)
-    internal fun `should always have next at start but not at stop`() = runBlocking {
+    internal fun `should always have next at start but not at stop`() = testDispatcherProvider.run {
         reader = KafkaConsumerIterativeReader(
             "any",
             consumerConfig,
@@ -249,8 +255,8 @@ internal class KafkaConsumerIterativeReaderIntegrationTest {
 
     @Test
     @Timeout(10)
-    internal fun `should accept start after stop and consume`() = runBlocking {
-        createTopics((1..20).map { "topic-$it" })
+    internal fun `should accept start after stop and consume`() = testDispatcherProvider.run {
+        createTopics((1..20).map { "topic-D-$it" })
 
         reader = KafkaConsumerIterativeReader(
             "any",
@@ -258,13 +264,13 @@ internal class KafkaConsumerIterativeReaderIntegrationTest {
             Duration.ofMillis(100),
             1,
             listOf(UUID.randomUUID().toString()),
-            Pattern.compile("topic-1.")
+            Pattern.compile("topic-D-1.")
         )
         reader.start(relaxedMockk())
         reader.stop(relaxedMockk())
 
         (1..20).forEach {
-            kafkaProducer.send(ProducerRecord("topic-$it", "key-$it", "value-$it"))
+            kafkaProducer.send(ProducerRecord("topic-D-$it", "key-$it", "value-$it"))
         }
 
         reader.start(relaxedMockk())
