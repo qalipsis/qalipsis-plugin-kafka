@@ -12,21 +12,26 @@ import io.qalipsis.api.steps.StepCreationContext
 import io.qalipsis.api.steps.StepCreationContextImpl
 import io.qalipsis.plugins.kafka.producer.KafkaProducerStep
 import io.qalipsis.test.assertk.prop
+import io.qalipsis.test.coroutines.TestDispatcherProvider
 import io.qalipsis.test.mockk.WithMockk
 import io.qalipsis.test.mockk.relaxedMockk
 import io.qalipsis.test.steps.AbstractStepSpecificationConverterTest
-import kotlinx.coroutines.test.runBlockingTest
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.Serializer
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.RegisterExtension
 
 /**
  * @author Gabriel Moraes
  */
 @WithMockk
 @Suppress("UNCHECKED_CAST")
-internal class KafkaProducerStepSpecificationConverterTest: AbstractStepSpecificationConverterTest<KafkaProducerStepSpecificationConverter<Any, Any>>(){
+internal class KafkaProducerStepSpecificationConverterTest: AbstractStepSpecificationConverterTest<KafkaProducerStepSpecificationConverter<Any, Any>>() {
+
+    @JvmField
+    @RegisterExtension
+    val testDispatcherProvider = TestDispatcherProvider()
 
     @RelaxedMockK
     private lateinit var keySerializer: Serializer<Any>
@@ -45,7 +50,7 @@ internal class KafkaProducerStepSpecificationConverterTest: AbstractStepSpecific
     }
 
     @Test
-    internal fun `should convert spec with name and retry policy`() = runBlockingTest {
+    internal fun `should convert spec with name and retry policy`() = testDispatcherProvider.runTest {
         // given
         val spec = KafkaProducerStepSpecificationImpl<Any, Any, Any>(keySerializer, valueSerializer)
         spec.apply {
@@ -88,7 +93,7 @@ internal class KafkaProducerStepSpecificationConverterTest: AbstractStepSpecific
 
 
     @Test
-    internal fun `should convert spec without name and retry policy`() = runBlockingTest {
+    internal fun `should convert spec without name and retry policy`() = testDispatcherProvider.runTest {
         // given
         val spec = KafkaProducerStepSpecificationImpl<Any, Any, Any>(keySerializer, valueSerializer)
         spec.apply {

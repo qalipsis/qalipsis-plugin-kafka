@@ -223,7 +223,7 @@ internal class KafkaConsumerStepSpecification<K : Any, V : Any> internal constru
         this.monitoringConfig.monitoringConfig()
     }
 
-    override fun forwardOnce(bufferSize: Int, idleTimeout: Duration) {
+    override fun unicast(bufferSize: Int, idleTimeout: Duration) {
         singletonConfiguration.bufferSize = bufferSize
         singletonConfiguration.idleTimeout = idleTimeout
     }

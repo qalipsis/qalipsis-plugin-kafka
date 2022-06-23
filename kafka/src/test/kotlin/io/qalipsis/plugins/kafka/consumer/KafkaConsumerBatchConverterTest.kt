@@ -12,10 +12,10 @@ import io.mockk.every
 import io.mockk.verify
 import io.qalipsis.api.context.StepStartStopContext
 import io.qalipsis.api.events.EventsLogger
+import io.qalipsis.test.coroutines.TestDispatcherProvider
 import io.qalipsis.test.mockk.CleanMockkRecordedCalls
 import io.qalipsis.test.mockk.relaxedMockk
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.test.runBlockingTest
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.ConsumerRecords
 import org.apache.kafka.common.TopicPartition
@@ -26,6 +26,7 @@ import org.apache.kafka.common.record.TimestampType
 import org.apache.kafka.common.serialization.Deserializer
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import org.junit.jupiter.api.extension.RegisterExtension
 import java.util.concurrent.atomic.AtomicLong
 
 /**
@@ -34,6 +35,10 @@ import java.util.concurrent.atomic.AtomicLong
  */
 @CleanMockkRecordedCalls
 internal class KafkaConsumerBatchConverterTest {
+
+    @JvmField
+    @RegisterExtension
+    val testDispatcherProvider = TestDispatcherProvider()
 
     private val keySerializer: Deserializer<Int> = relaxedMockk {
         every { deserialize(any(), any(), any()) } answers { thirdArg<ByteArray?>()?.size ?: Int.MIN_VALUE }
@@ -107,7 +112,7 @@ internal class KafkaConsumerBatchConverterTest {
     private fun executeConversion(
         meterRegistry: MeterRegistry? = null,
         eventsLogger: EventsLogger? = null
-    ) = runBlockingTest {
+    ) = testDispatcherProvider.runTest {
         // given
         val key1 = ByteArray(10)
         val value1 = ByteArray(20)

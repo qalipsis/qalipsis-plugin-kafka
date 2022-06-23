@@ -77,7 +77,7 @@ internal class KafkaConsumerStepSpecificationTest {
             properties("key-2" to "value-2", "key-3" to 5)
             offsetReset(OffsetResetStrategy.EARLIEST)
 
-            forwardOnce(6, Duration.ofDays(1))
+            unicast(6, Duration.ofDays(1))
             monitoring {
                 events = true
             }
@@ -131,7 +131,7 @@ internal class KafkaConsumerStepSpecificationTest {
             properties("key-2" to "value-2", "key-3" to 5)
             offsetReset(OffsetResetStrategy.EARLIEST)
 
-            forwardOnce(6, Duration.ofDays(1))
+            unicast(6, Duration.ofDays(1))
 
             monitoring {
                 meters = true

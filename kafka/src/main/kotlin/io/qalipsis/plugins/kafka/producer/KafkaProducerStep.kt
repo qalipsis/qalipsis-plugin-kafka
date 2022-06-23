@@ -3,7 +3,7 @@ package io.qalipsis.plugins.kafka.producer
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.MeterRegistry
 import io.qalipsis.api.context.StepContext
-import io.qalipsis.api.context.StepId
+import io.qalipsis.api.context.StepName
 import io.qalipsis.api.context.StepStartStopContext
 import io.qalipsis.api.events.EventsLogger
 import io.qalipsis.api.lang.tryAndLog
@@ -31,7 +31,7 @@ import java.util.Properties
  * @author Gabriel Moraes
  */
 internal class KafkaProducerStep<I, K, V>(
-    private val stepId: StepId,
+    private val stepId: StepName,
     retryPolicy: RetryPolicy?,
     private val clientName: String?,
     private val props: Properties,

@@ -9,23 +9,28 @@ import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.spyk
 import io.mockk.verifyOrder
 import io.qalipsis.api.context.StepContext
-import io.qalipsis.api.context.StepId
+import io.qalipsis.api.context.StepName
 import io.qalipsis.api.context.StepStartStopContext
 import io.qalipsis.api.events.EventsLogger
+import io.qalipsis.test.coroutines.TestDispatcherProvider
 import io.qalipsis.test.mockk.WithMockk
 import io.qalipsis.test.mockk.relaxedMockk
 import io.qalipsis.test.steps.StepTestHelper
-import kotlinx.coroutines.test.runBlockingTest
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.common.serialization.Serdes
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.RegisterExtension
 
 /**
  * @author Gabriel Moraes
  */
 @WithMockk
 internal class KafkaProducerStepTest {
+
+    @JvmField
+    @RegisterExtension
+    val testDispatcherProvider = TestDispatcherProvider()
 
     private lateinit var recordsBuilder: (suspend (ctx: StepContext<*, *>, input: Any) -> List<KafkaProducerRecord<String, String>>)
 
@@ -60,7 +65,7 @@ internal class KafkaProducerStepTest {
     }
 
     @Test
-    fun `should produce without recording metrics`() = runBlockingTest {
+    fun `should produce without recording metrics`() = testDispatcherProvider.runTest {
         // given
         recordsBuilder = { _, _ ->
             listOf(
@@ -73,7 +78,7 @@ internal class KafkaProducerStepTest {
 
         val kafkaProducerStep = spyk(
             KafkaProducerStep(
-                StepId(), null, "test", relaxedMockk(),
+                StepName(), null, "test", relaxedMockk(),
                 recordsBuilder, keySerializer, valueSerializer, null, null
             ), recordPrivateCalls = true
         )
@@ -90,7 +95,7 @@ internal class KafkaProducerStepTest {
     }
 
     @Test
-    fun `should produce recording metrics without record key`() = runBlockingTest {
+    fun `should produce recording metrics without record key`() = testDispatcherProvider.runTest {
         // given
         recordsBuilder = { _, _ ->
             listOf(
@@ -114,7 +119,7 @@ internal class KafkaProducerStepTest {
 
         val kafkaProducerStep = spyk(
             KafkaProducerStep(
-                StepId(), null, "test", relaxedMockk(),
+                StepName(), null, "test", relaxedMockk(),
                 recordsBuilder, keySerializer, valueSerializer, eventsLogger, meterRegistry
             ), recordPrivateCalls = true
         )
@@ -146,7 +151,7 @@ internal class KafkaProducerStepTest {
     }
 
     @Test
-    fun `should produce recording metrics with record key`() = runBlockingTest {
+    fun `should produce recording metrics with record key`() = testDispatcherProvider.runTest {
         // given
         recordsBuilder = { _, _ ->
             listOf(
@@ -173,7 +178,7 @@ internal class KafkaProducerStepTest {
 
         val kafkaProducerStep = spyk(
             KafkaProducerStep(
-                StepId(), null, "test", relaxedMockk(),
+                StepName(), null, "test", relaxedMockk(),
                 recordsBuilder, keySerializer, valueSerializer, eventsLogger, meterRegistry
             ), recordPrivateCalls = true
         )
