@@ -1,11 +1,12 @@
 meters:
-  kafka:
-    enabled: false
-    step: PT10S
-    topic: qalipsis-meters
-    linger.ms: 1000
+  export:
+    kafka:
+      enabled: false
+      step: PT10S
+      bootstrap.servers: localhost:9092
+      topic: qalipsis-meters
+      linger.ms: 5000
+      batch-size: 800000 # In bytes.
+      configuration:
+        delivery.timeout.ms: 10000
 
-    configuration:
-      delivery.timeout.ms: 10000
-
-  bootstrap.servers: localhost:9092

@@ -1,4 +1,4 @@
-package io.qalipsis.plugins.kafka.micrometer
+package io.qalipsis.plugins.kafka.meters
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter
 import com.fasterxml.jackson.annotation.JsonAnySetter

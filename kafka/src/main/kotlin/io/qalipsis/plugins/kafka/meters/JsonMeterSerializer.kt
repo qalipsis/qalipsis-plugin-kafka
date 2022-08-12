@@ -1,4 +1,4 @@
-package io.qalipsis.plugins.kafka.micrometer
+package io.qalipsis.plugins.kafka.meters
 
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.DistributionSummary

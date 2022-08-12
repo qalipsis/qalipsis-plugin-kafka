@@ -1,4 +1,4 @@
-package io.qalipsis.plugins.kafka.micrometer
+package io.qalipsis.plugins.kafka.meters
 
 import assertk.all
 import assertk.assertThat
@@ -8,14 +8,13 @@ import assertk.assertions.key
 import assertk.assertions.prop
 import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest
+import io.qalipsis.plugins.kafka.meters.KafkaMeterRegistry
 import io.qalipsis.test.assertk.typedProp
 import jakarta.inject.Inject
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
-import org.testcontainers.junit.jupiter.Testcontainers
 
-@Testcontainers
-@MicronautTest(propertySources = ["classpath:application-kafka-config-test.yml"])
+@MicronautTest(environments = ["kafka", "kafka-config-test"])
 internal class KafkaMeterRegistryConfigIntegrationTest {
 
     @Inject

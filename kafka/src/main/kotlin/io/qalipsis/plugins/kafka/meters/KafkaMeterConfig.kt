@@ -1,4 +1,4 @@
-package io.qalipsis.plugins.kafka.micrometer
+package io.qalipsis.plugins.kafka.meters
 
 import io.micrometer.core.instrument.config.MeterRegistryConfigValidator
 import io.micrometer.core.instrument.config.validate.PropertyValidator
@@ -15,7 +15,7 @@ import java.util.Properties
  */
 abstract class KafkaMeterConfig : StepRegistryConfig {
 
-    override fun prefix(): String? {
+    override fun prefix(): String {
         return "kafka"
     }
 
@@ -54,7 +54,7 @@ abstract class KafkaMeterConfig : StepRegistryConfig {
         return PropertyValidator.getString(this, "timestampFieldName").orElse("timestamp")
     }
 
-    override fun validate(): Validated<*>? {
+    override fun validate(): Validated<*> {
         return MeterRegistryConfigValidator.checkAll(this,
             { c: KafkaMeterConfig -> StepRegistryConfig.validate(c) },
             MeterRegistryConfigValidator.checkRequired("topic") { obj: KafkaMeterConfig -> obj.topic() }

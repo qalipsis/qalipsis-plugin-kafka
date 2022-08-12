@@ -1,4 +1,4 @@
-package io.qalipsis.plugins.kafka.micrometer
+package io.qalipsis.plugins.kafka.meters
 
 import assertk.all
 import assertk.assertThat

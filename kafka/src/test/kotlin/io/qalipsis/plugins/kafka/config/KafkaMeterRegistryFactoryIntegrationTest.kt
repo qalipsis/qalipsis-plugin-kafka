@@ -8,23 +8,16 @@ import io.micrometer.core.instrument.MeterRegistry
 import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest
 import io.micronaut.test.support.TestPropertyProvider
-import io.qalipsis.plugins.kafka.Constants
-import io.qalipsis.plugins.kafka.micrometer.KafkaMeterRegistry
+import io.qalipsis.plugins.kafka.meters.KafkaMeterRegistry
 import jakarta.inject.Inject
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
-import org.testcontainers.containers.KafkaContainer
-import org.testcontainers.junit.jupiter.Container
-import org.testcontainers.junit.jupiter.Testcontainers
-import org.testcontainers.utility.DockerImageName
-import kotlin.math.pow
 
-@Testcontainers
 internal class KafkaMeterRegistryFactoryIntegrationTest {
 
     @Nested
-    @MicronautTest(startApplication = false)
+    @MicronautTest(startApplication = false, environments = ["kafka"])
     inner class WithoutMeters : TestPropertyProvider {
 
         @Inject
@@ -32,9 +25,8 @@ internal class KafkaMeterRegistryFactoryIntegrationTest {
 
         override fun getProperties(): MutableMap<String, String> {
             return mutableMapOf(
-                "meters.enabled" to "false",
-                "meters.kafka.enabled" to "true",
-                "meters.bootstrap.servers" to container.bootstrapServers
+                "meters.export.enabled" to "false",
+                "meters.export.kafka.enabled" to "true"
             )
         }
 
@@ -47,7 +39,7 @@ internal class KafkaMeterRegistryFactoryIntegrationTest {
     }
 
     @Nested
-    @MicronautTest(startApplication = false)
+    @MicronautTest(startApplication = false, environments = ["kafka"])
     inner class WithMetersButWithoutKafka : TestPropertyProvider {
 
         @Inject
@@ -55,9 +47,8 @@ internal class KafkaMeterRegistryFactoryIntegrationTest {
 
         override fun getProperties(): MutableMap<String, String> {
             return mutableMapOf(
-                "meters.enabled" to "true",
-                "meters.kafka.enabled" to "false",
-                "meters.bootstrap.servers" to container.bootstrapServers
+                "meters.export.enabled" to "true",
+                "meters.export.kafka.enabled" to "false"
             )
         }
 
@@ -70,7 +61,7 @@ internal class KafkaMeterRegistryFactoryIntegrationTest {
     }
 
     @Nested
-    @MicronautTest(startApplication = false)
+    @MicronautTest(startApplication = false, environments = ["kafka"])
     inner class WithKafkaMeterRegistry : TestPropertyProvider {
 
         @Inject
@@ -78,9 +69,8 @@ internal class KafkaMeterRegistryFactoryIntegrationTest {
 
         override fun getProperties(): MutableMap<String, String> {
             return mutableMapOf(
-                "meters.enabled" to "true",
-                "meters.kafka.enabled" to "true",
-                "meters.bootstrap.servers" to container.bootstrapServers
+                "meters.export.enabled" to "true",
+                "meters.export.kafka.enabled" to "true"
             )
         }
 
@@ -92,15 +82,4 @@ internal class KafkaMeterRegistryFactoryIntegrationTest {
         }
     }
 
-    companion object {
-
-        @Container
-        @JvmStatic
-        private val container = KafkaContainer(DockerImageName.parse(Constants.DOCKER_IMAGE)).apply {
-            withCreateContainerCmdModifier { cmd ->
-                cmd.hostConfig!!.withMemory(512 * 1024.0.pow(2).toLong()).withCpuCount(2)
-            }
-            withEnv("KAFKA_HEAP_OPTS", "-Xms256m -Xmx256m")
-        }
-    }
 }

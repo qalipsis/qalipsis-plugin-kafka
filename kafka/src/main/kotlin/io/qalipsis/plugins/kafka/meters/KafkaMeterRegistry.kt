@@ -1,4 +1,4 @@
-package io.qalipsis.plugins.kafka.micrometer
+package io.qalipsis.plugins.kafka.meters
 
 import io.micrometer.core.instrument.Clock
 import io.micrometer.core.instrument.Meter

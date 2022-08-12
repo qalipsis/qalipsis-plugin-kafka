@@ -1,12 +1,12 @@
 meters:
-  kafka:
-    bootstrap.servers: kafka-1:9092
-    enabled: true
-    step: PT10S
-    topic: qalipsis-meters
-    linger.ms: 3000
-    batch-size: 500
-
-    configuration:
-      delivery.timeout.ms: 14000
+  export:
+    kafka:
+      enabled: true
+      step: PT10S
+      bootstrap.servers: "kafka-1:9092"
+      topic: qalipsis-meters
+      linger.ms: 3000
+      batch-size: 500
+      configuration:
+        delivery.timeout.ms: 14000
 
