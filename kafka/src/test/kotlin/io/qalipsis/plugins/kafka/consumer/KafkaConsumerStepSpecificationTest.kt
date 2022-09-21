@@ -29,6 +29,7 @@ import assertk.assertions.isTrue
 import assertk.assertions.key
 import assertk.assertions.prop
 import io.qalipsis.api.scenario.StepSpecificationRegistry
+import io.qalipsis.api.scenario.TestScenarioFactory
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.SingletonConfiguration
 import io.qalipsis.api.steps.SingletonType
@@ -51,7 +52,7 @@ internal class KafkaConsumerStepSpecificationTest {
 
     @Test
     internal fun `should add minimal specification to the scenario`() {
-        val scenario = scenario("my-scenario") as StepSpecificationRegistry
+        val scenario = TestScenarioFactory.scenario("my-scenario") as StepSpecificationRegistry
         scenario.kafka().consume {}
 
         assertThat(scenario.rootSteps[0]).isInstanceOf(KafkaConsumerStepSpecification::class).all {
@@ -80,7 +81,7 @@ internal class KafkaConsumerStepSpecificationTest {
 
     @Test
     internal fun `should apply user-defined configuration with topics, poll timeout as ms and events monitoring on`() {
-        val scenario = scenario("my-scenario") as StepSpecificationRegistry
+        val scenario = TestScenarioFactory.scenario("my-scenario") as StepSpecificationRegistry
         scenario.kafka().consume {
             bootstrap("my-bootstrap")
             concurrency(2)
@@ -134,7 +135,7 @@ internal class KafkaConsumerStepSpecificationTest {
 
     @Test
     internal fun `should apply user-defined configuration with topics, poll timeout as ms and meters monitoring on`() {
-        val scenario = scenario("my-scenario") as StepSpecificationRegistry
+        val scenario = TestScenarioFactory.scenario("my-scenario") as StepSpecificationRegistry
         scenario.kafka().consume {
             bootstrap("my-bootstrap")
             concurrency(2)
@@ -189,7 +190,7 @@ internal class KafkaConsumerStepSpecificationTest {
 
     @Test
     internal fun `should apply topic pattern, poll timeout as duration and values bytes count`() {
-        val scenario = scenario("my-scenario") as StepSpecificationRegistry
+        val scenario = TestScenarioFactory.scenario("my-scenario") as StepSpecificationRegistry
         scenario.kafka().consume {
             topics("topic-1", "topic-2")
             topicsPattern(Pattern.compile(".*"))  // This should clear the topics collection
@@ -213,7 +214,7 @@ internal class KafkaConsumerStepSpecificationTest {
         val keyDeserializer = KeyDeserializer()
         val valueDeserializer = ValueDeserializer()
 
-        val scenario = scenario("my-scenario") as StepSpecificationRegistry
+        val scenario = TestScenarioFactory.scenario("my-scenario") as StepSpecificationRegistry
         scenario.kafka().consume {}.flatten(keyDeserializer, valueDeserializer)
 
         assertThat(scenario.rootSteps[0]).isInstanceOf(KafkaConsumerStepSpecification::class).all {
@@ -227,7 +228,7 @@ internal class KafkaConsumerStepSpecificationTest {
 
     @Test
     internal fun `should flatten with other deserializer classes and keep the default configuration`() {
-        val scenario = scenario("my-scenario") as StepSpecificationRegistry
+        val scenario = TestScenarioFactory.scenario("my-scenario") as StepSpecificationRegistry
         scenario.kafka().consume {}.flatten(KeyDeserializer::class, ValueDeserializer::class)
 
         assertThat(scenario.rootSteps[0]).isInstanceOf(KafkaConsumerStepSpecification::class).all {
@@ -245,7 +246,7 @@ internal class KafkaConsumerStepSpecificationTest {
 
     @Test
     internal fun `should flatten with other deserializer classes names and keep the default configuration`() {
-        val scenario = scenario("my-scenario") as StepSpecificationRegistry
+        val scenario = TestScenarioFactory.scenario("my-scenario") as StepSpecificationRegistry
         scenario.kafka().consume {}
             .flatten<Int, String>(KeyDeserializer::class.jvmName, ValueDeserializer::class.jvmName)
 
@@ -268,7 +269,7 @@ internal class KafkaConsumerStepSpecificationTest {
         val keyDeserializer = KeyDeserializer()
         val valueDeserializer = ValueDeserializer()
 
-        val scenario = scenario("my-scenario") as StepSpecificationRegistry
+        val scenario = TestScenarioFactory.scenario("my-scenario") as StepSpecificationRegistry
         scenario.kafka().consume {}.deserialize(keyDeserializer, valueDeserializer)
 
         assertThat(scenario.rootSteps[0]).isInstanceOf(KafkaConsumerStepSpecification::class).all {
@@ -282,7 +283,7 @@ internal class KafkaConsumerStepSpecificationTest {
 
     @Test
     internal fun `should apply other deserializer classes and keep the default configuration`() {
-        val scenario = scenario("my-scenario") as StepSpecificationRegistry
+        val scenario = TestScenarioFactory.scenario("my-scenario") as StepSpecificationRegistry
         scenario.kafka().consume {}.deserialize(KeyDeserializer::class, ValueDeserializer::class)
 
         assertThat(scenario.rootSteps[0]).isInstanceOf(KafkaConsumerStepSpecification::class).all {
@@ -300,7 +301,7 @@ internal class KafkaConsumerStepSpecificationTest {
 
     @Test
     internal fun `should apply other deserializer classes names and keep the default configuration`() {
-        val scenario = scenario("my-scenario") as StepSpecificationRegistry
+        val scenario = TestScenarioFactory.scenario("my-scenario") as StepSpecificationRegistry
         scenario.kafka().consume {}
             .deserialize<Int, String>(KeyDeserializer::class.jvmName, ValueDeserializer::class.jvmName)
 

@@ -49,9 +49,9 @@ internal object KafkaConsumerScenario {
 
     private val stringDeserializer = Serdes.String().deserializer()
 
-    @Scenario
+    @Scenario("consumer-kafka")
     fun consumeRecordsAndCorrelate() {
-        scenario("consumer-kafka") {
+        scenario {
             minionsCount = minions
             profile {
                 // Starts all at once.

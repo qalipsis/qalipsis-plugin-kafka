@@ -43,9 +43,9 @@ internal object KafkaProducerScenario {
 
     private val stringDeserializer = Serdes.String().deserializer()
 
-    @Scenario
+    @Scenario("producer-test-kafka")
     fun produceRecords() {
-        scenario("producer-test-kafka") {
+        scenario {
             minionsCount = minions
             profile {
                 // Starts all at once.
