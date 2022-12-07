@@ -16,13 +16,12 @@
 
 package io.qalipsis.plugins.kafka.producer
 
-import io.micrometer.core.instrument.MeterRegistry
 import io.qalipsis.api.annotations.StepConverter
 import io.qalipsis.api.events.EventsLogger
+import io.qalipsis.api.meters.CampaignMeterRegistry
 import io.qalipsis.api.steps.StepCreationContext
 import io.qalipsis.api.steps.StepSpecification
 import io.qalipsis.api.steps.StepSpecificationConverter
-import io.qalipsis.plugins.kafka.producer.KafkaProducerStep
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import java.util.Properties
 
@@ -33,7 +32,7 @@ import java.util.Properties
  */
 @StepConverter
 internal class KafkaProducerStepSpecificationConverter<K, V>(
-    private val meterRegistry: MeterRegistry,
+    private val meterRegistry: CampaignMeterRegistry,
     private val eventsLogger: EventsLogger
 
 ) : StepSpecificationConverter<KafkaProducerStepSpecificationImpl<*, K, V>> {

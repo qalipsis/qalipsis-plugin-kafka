@@ -17,6 +17,7 @@
 package io.qalipsis.plugins.kafka.config
 
 import io.micrometer.core.instrument.Clock
+import io.micronaut.context.annotation.Bean
 import io.micronaut.context.annotation.Factory
 import io.micronaut.context.annotation.Requirements
 import io.micronaut.context.annotation.Requires
@@ -24,9 +25,12 @@ import io.micronaut.context.env.Environment
 import io.micronaut.core.naming.conventions.StringConvention
 import io.micronaut.core.util.StringUtils
 import io.qalipsis.api.config.MetersConfig
+import io.qalipsis.api.meters.MeterRegistryConfiguration
+import io.qalipsis.api.meters.MeterRegistryFactory
 import io.qalipsis.plugins.kafka.meters.KafkaMeterConfig
 import io.qalipsis.plugins.kafka.meters.KafkaMeterRegistry
 import jakarta.inject.Singleton
+import java.time.Duration
 import java.util.Properties
 
 /**
@@ -39,18 +43,34 @@ import java.util.Properties
     Requires(property = MetersConfig.EXPORT_ENABLED, notEquals = StringUtils.FALSE),
     Requires(property = KafkaMeterRegistryFactory.KAFKA_ENABLED, notEquals = StringUtils.FALSE)
 )
-internal class KafkaMeterRegistryFactory {
+internal class KafkaMeterRegistryFactory(environment: Environment) : MeterRegistryFactory {
 
-    @Singleton
-    fun kafkaRegistry(environment: Environment): KafkaMeterRegistry {
-        val properties = Properties()
+    private val properties = Properties()
+
+    init {
         properties.putAll(environment.getProperties(MetersConfig.EXPORT_CONFIGURATION, StringConvention.RAW))
         properties.putAll(environment.getProperties(MetersConfig.EXPORT_CONFIGURATION, StringConvention.CAMEL_CASE))
+    }
 
+    @Singleton
+    @Bean(preDestroy = "stop")
+    fun kafkaRegistry(): KafkaMeterRegistry {
         return KafkaMeterRegistry(
             object : KafkaMeterConfig() {
                 override fun get(key: String): String? {
                     return properties[key]?.toString()
+                }
+            },
+            Clock.SYSTEM
+        )
+    }
+
+    override fun getRegistry(configuration: MeterRegistryConfiguration): KafkaMeterRegistry {
+        return KafkaMeterRegistry(
+            object : KafkaMeterConfig() {
+                override fun step(): Duration = configuration.step ?: super.step()
+                override fun get(key: String): String? {
+                    return properties.getProperty(key)
                 }
             },
             Clock.SYSTEM

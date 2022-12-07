@@ -30,7 +30,6 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import io.micrometer.core.instrument.Clock
 import io.micrometer.core.instrument.Tags
 import io.micrometer.core.instrument.util.NamedThreadFactory
-import io.qalipsis.api.events.*
 import io.qalipsis.plugins.kafka.Constants
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.consumer.ConsumerRecord
@@ -39,14 +38,18 @@ import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.Deserializer
 import org.apache.kafka.common.serialization.Serdes
-import org.junit.jupiter.api.*
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import org.testcontainers.containers.KafkaContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.utility.DockerImageName
-import java.time.*
-import java.util.*
+import java.time.Duration
+import java.time.Instant
+import java.util.Properties
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.pow
 
@@ -74,7 +77,7 @@ internal class KafkaMeterRegistryIntegrationTest {
         meterRegistryProperties["kafka.step"] = "1s"
 
         configuration = object : KafkaMeterConfig() {
-            override fun get(key: String?): String? {
+            override fun get(key: String): String? {
                 return meterRegistryProperties.getProperty(key)
             }
         }
@@ -102,7 +105,8 @@ internal class KafkaMeterRegistryIntegrationTest {
             record(Duration.ofMillis(2))
             record(Duration.ofMillis(12))
         }
-        meterRegistry.gauge("the-gauge", Tags.of("tag-3", "value-3"), AtomicInteger())!!.addAndGet(654)
+        val atomicInteger = AtomicInteger(654)
+        meterRegistry.gauge("the-gauge", Tags.of("tag-3", "value-3"), atomicInteger)
 
         // when
         val published = mutableListOf<Meter>()

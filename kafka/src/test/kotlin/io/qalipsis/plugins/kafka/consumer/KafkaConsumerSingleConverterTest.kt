@@ -18,9 +18,14 @@ package io.qalipsis.plugins.kafka.consumer
 
 import assertk.all
 import assertk.assertThat
-import assertk.assertions.*
+import assertk.assertions.hasSize
+import assertk.assertions.index
+import assertk.assertions.isEqualTo
+import assertk.assertions.isNotNull
+import assertk.assertions.isSameAs
+import assertk.assertions.key
+import assertk.assertions.prop
 import io.micrometer.core.instrument.Counter
-import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Tags
 import io.mockk.coEvery
 import io.mockk.confirmVerified
@@ -28,6 +33,7 @@ import io.mockk.every
 import io.mockk.verify
 import io.qalipsis.api.context.StepStartStopContext
 import io.qalipsis.api.events.EventsLogger
+import io.qalipsis.api.meters.CampaignMeterRegistry
 import io.qalipsis.test.coroutines.TestDispatcherProvider
 import io.qalipsis.test.mockk.CleanMockkRecordedCalls
 import io.qalipsis.test.mockk.relaxedMockk
@@ -99,7 +105,7 @@ internal class KafkaConsumerSingleConverterTest {
     internal fun `should deserialize with monitoring`() {
         val tags: Map<String, String> = emptyMap()
 
-        val meterRegistry = relaxedMockk<MeterRegistry> {
+        val meterRegistry = relaxedMockk<CampaignMeterRegistry> {
             every { counter("kafka-consume-key-bytes", refEq(metersTags)) } returns consumedKeyBytesCounter
             every { counter("kafka-consume-value-bytes", refEq(metersTags)) } returns consumedValueBytesCounter
             every { counter("kafka-consume-records", refEq(metersTags)) } returns consumedRecordsCounter
@@ -129,7 +135,7 @@ internal class KafkaConsumerSingleConverterTest {
     }
 
     private fun executeConversion(
-        meterRegistry: MeterRegistry? = null,
+        meterRegistry: CampaignMeterRegistry? = null,
         eventsLogger: EventsLogger? = null
     ) = testDispatcherProvider.runTest {
         // given
