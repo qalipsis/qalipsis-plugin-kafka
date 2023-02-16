@@ -39,10 +39,10 @@ kotlin.sourceSets["test"].kotlin.srcDir("build/generated/source/kaptKotlin/catad
 kapt.useBuildCache = false
 
 val kafkaVersion = "3.2.2"
-val coreVersion: String by project
+val pluginPlatformVersion: String by project
 
 dependencies {
-    implementation(platform("io.qalipsis:plugin-platform:${coreVersion}"))
+    implementation(platform("io.qalipsis:plugin-platform:${pluginPlatformVersion}"))
     compileOnly("io.micronaut:micronaut-runtime")
     compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core")
     api("org.apache.kafka:kafka-clients:$kafkaVersion")
@@ -51,7 +51,7 @@ dependencies {
     api("io.qalipsis:api-common")
     api("io.qalipsis:api-dsl")
 
-    kapt(platform("io.qalipsis:plugin-platform:${coreVersion}"))
+    kapt(platform("io.qalipsis:plugin-platform:${pluginPlatformVersion}"))
     kapt("io.micronaut:micronaut-inject-java")
     kapt("io.micronaut:micronaut-validation")
     kapt("io.micronaut:micronaut-graal")
@@ -59,11 +59,11 @@ dependencies {
     kapt("io.qalipsis:api-dsl")
     kapt("io.qalipsis:api-common")
 
-    testFixturesImplementation(platform("io.qalipsis:plugin-platform:${coreVersion}"))
+    testFixturesImplementation(platform("io.qalipsis:plugin-platform:${pluginPlatformVersion}"))
     testFixturesImplementation("io.qalipsis:api-common")
     testFixturesImplementation("io.qalipsis:test")
 
-    testImplementation(platform("io.qalipsis:plugin-platform:${coreVersion}"))
+    testImplementation(platform("io.qalipsis:plugin-platform:${pluginPlatformVersion}"))
     testImplementation("io.micronaut.test:micronaut-test-junit5")
     testImplementation("org.testcontainers:kafka")
     testImplementation("io.qalipsis:test")
@@ -78,7 +78,7 @@ dependencies {
     testRuntimeOnly("io.qalipsis:head")
     testRuntimeOnly("io.qalipsis:factory")
 
-    kaptTest(platform("io.qalipsis:plugin-platform:${coreVersion}"))
+    kaptTest(platform("io.qalipsis:plugin-platform:${pluginPlatformVersion}"))
     kaptTest("io.micronaut:micronaut-inject-java")
     kaptTest("io.qalipsis:api-processors")
 }
