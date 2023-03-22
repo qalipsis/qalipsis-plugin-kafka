@@ -1,0 +1,6 @@
+kafka-consume-key-bytes;counter
+kafka-consume-records;counter
+kafka-consume-value-bytes;counter
+kafka-produce-key-bytes;counter
+kafka-produce-records;counter
+kafka-produce-value-bytes;counter

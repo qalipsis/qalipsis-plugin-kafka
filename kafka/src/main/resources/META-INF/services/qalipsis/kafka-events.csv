@@ -1,0 +1,6 @@
+kafka.consume.consumed.key-bytes;Int
+kafka.consume.consumed.records;Int
+kafka.consume.consumed.value-bytes;Int
+kafka.produce.sent.keys-bytes;Int
+kafka.produce.sent.records;Int
+kafka.produce.sent.values-bytes;Int
