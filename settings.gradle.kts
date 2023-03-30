@@ -17,5 +17,7 @@
 rootProject.name = "qalipsis-plugins-kafka"
 
 include(
-    "kafka"
+    "qalipsis-plugin-kafka"
 )
+
+project(":qalipsis-plugin-kafka").projectDir = File(rootDir, "kafka")
