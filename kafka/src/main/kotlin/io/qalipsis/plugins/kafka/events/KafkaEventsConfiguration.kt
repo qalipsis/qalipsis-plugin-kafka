@@ -20,6 +20,7 @@ import io.micronaut.context.annotation.ConfigurationProperties
 import io.micronaut.context.annotation.Requires
 import io.qalipsis.api.constraints.PositiveOrZeroDuration
 import io.qalipsis.api.events.EventLevel
+import java.text.Format
 import java.time.Duration
 import java.util.Properties
 import javax.validation.constraints.Min
