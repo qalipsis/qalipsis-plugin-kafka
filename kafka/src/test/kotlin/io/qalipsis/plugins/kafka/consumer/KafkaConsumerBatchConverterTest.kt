@@ -25,15 +25,16 @@ import assertk.assertions.isNotNull
 import assertk.assertions.isSameAs
 import assertk.assertions.key
 import assertk.assertions.prop
-import io.micrometer.core.instrument.Counter
-import io.micrometer.core.instrument.Tags
 import io.mockk.coEvery
 import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.verify
+import io.mockk.verifyOrder
 import io.qalipsis.api.context.StepStartStopContext
 import io.qalipsis.api.events.EventsLogger
 import io.qalipsis.api.meters.CampaignMeterRegistry
+import io.qalipsis.api.meters.Counter
+import io.qalipsis.api.meters.Meter
 import io.qalipsis.test.coroutines.TestDispatcherProvider
 import io.qalipsis.test.mockk.CleanMockkRecordedCalls
 import io.qalipsis.test.mockk.relaxedMockk
@@ -70,10 +71,10 @@ internal class KafkaConsumerBatchConverterTest {
         every { deserialize(any(), any(), any()) } answers { thirdArg<ByteArray?>()?.size ?: Int.MAX_VALUE }
     }
 
-    private val metersTags = relaxedMockk<Tags>()
-
     private val startStopContext = relaxedMockk<StepStartStopContext> {
-        every { toMetersTags() } returns metersTags
+        every { toEventTags() } returns emptyMap()
+        every { scenarioName } returns "scenario-name"
+        every { stepName } returns "step-name"
     }
 
     private val consumedKeyBytesCounter = relaxedMockk<Counter>()
@@ -83,6 +84,38 @@ internal class KafkaConsumerBatchConverterTest {
     private val consumedRecordsCounter = relaxedMockk<Counter>()
 
     private val eventsLogger = relaxedMockk<EventsLogger>()
+
+    private val tags: Map<String, String> = startStopContext.toEventTags()
+
+    private val meterRegistry = relaxedMockk<CampaignMeterRegistry> {
+        every {
+            counter(
+                "scenario-name",
+                "step-name",
+                "kafka-consume-key-bytes",
+                refEq(tags)
+            )
+        } returns consumedKeyBytesCounter
+        every { consumedKeyBytesCounter.report(any()) } returns consumedKeyBytesCounter
+        every {
+            counter(
+                "scenario-name",
+                "step-name",
+                "kafka-consume-value-bytes",
+                refEq(tags)
+            )
+        } returns consumedValueBytesCounter
+        every { consumedValueBytesCounter.report(any()) } returns consumedValueBytesCounter
+        every {
+            counter(
+                "scenario-name",
+                "step-name",
+                "kafka-consume-records",
+                refEq(tags)
+            )
+        } returns consumedRecordsCounter
+        every { consumedRecordsCounter.report(any()) } returns consumedRecordsCounter
+    }
 
     @Test
     @Timeout(2)
@@ -102,17 +135,13 @@ internal class KafkaConsumerBatchConverterTest {
     @Test
     @Timeout(2)
     internal fun `should deserialize and monitor`() {
-        val tags: Map<String, String> = emptyMap()
-
-        val meterRegistry = relaxedMockk<CampaignMeterRegistry> {
-            every { counter("kafka-consume-key-bytes", refEq(metersTags)) } returns consumedKeyBytesCounter
-            every { counter("kafka-consume-value-bytes", refEq(metersTags)) } returns consumedValueBytesCounter
-            every { counter("kafka-consume-records", refEq(metersTags)) } returns consumedRecordsCounter
-        }
         // when
         executeConversion(meterRegistry, eventsLogger)
 
-        verify {
+        verifyOrder {
+            consumedKeyBytesCounter.report(any<Meter.ReportingConfiguration<Counter>.() -> Unit>())
+            consumedValueBytesCounter.report(any<Meter.ReportingConfiguration<Counter>.() -> Unit>())
+            consumedRecordsCounter.report(any<Meter.ReportingConfiguration<Counter>.() -> Unit>())
             consumedRecordsCounter.increment(3.0)
             consumedKeyBytesCounter.increment(22.0)
             consumedValueBytesCounter.increment(44.0)
