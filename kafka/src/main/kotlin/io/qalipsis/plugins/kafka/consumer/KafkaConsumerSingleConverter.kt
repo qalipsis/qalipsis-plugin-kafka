@@ -16,13 +16,14 @@
 
 package io.qalipsis.plugins.kafka.consumer
 
-import io.micrometer.core.instrument.Counter
 import io.qalipsis.api.context.StepOutput
 import io.qalipsis.api.context.StepStartStopContext
 import io.qalipsis.api.events.EventsLogger
 import io.qalipsis.api.lang.tryAndLogOrNull
 import io.qalipsis.api.logging.LoggerHelper.logger
 import io.qalipsis.api.meters.CampaignMeterRegistry
+import io.qalipsis.api.meters.Counter
+import io.qalipsis.api.report.ReportMessageSeverity
 import io.qalipsis.api.steps.datasource.DatasourceObjectConverter
 import org.apache.kafka.clients.consumer.ConsumerRecords
 import org.apache.kafka.common.serialization.Deserializer
@@ -52,25 +53,48 @@ internal class KafkaConsumerSingleConverter<K, V>(
 
     private val meterPrefix: String = "kafka-consume"
 
-    private lateinit var eventTags: Map<String, String>
+    private lateinit var tags: Map<String, String>
 
 
     override fun start(context: StepStartStopContext) {
         meterRegistry?.apply {
-            val tags = context.toMetersTags()
-            consumedKeyBytesCounter = counter("$meterPrefix-key-bytes", tags)
-            consumedValueBytesCounter = counter("$meterPrefix-value-bytes", tags)
-            consumedRecordsCounter = counter("$meterPrefix-records", tags)
+            tags = context.toEventTags()
+            val scenarioName = context.scenarioName
+            val stepName = context.stepName
+            consumedKeyBytesCounter = counter(scenarioName, stepName, "$meterPrefix-key-bytes", tags).report {
+                display(
+                    format = "received: %,.0f key bytes",
+                    severity = ReportMessageSeverity.INFO,
+                    row = 0,
+                    column = 2,
+                    Counter::count
+                )
+            }
+            consumedValueBytesCounter = counter(scenarioName, stepName, "$meterPrefix-value-bytes", tags).report {
+                display(
+                    format = "received: %,.0f values bytes",
+                    severity = ReportMessageSeverity.INFO,
+                    row = 0,
+                    column = 1,
+                    Counter::count
+                )
+            }
+            consumedRecordsCounter = counter(scenarioName, stepName, "$meterPrefix-records", tags).report {
+                display(
+                    format = "received rec: %,.0f",
+                    severity = ReportMessageSeverity.INFO,
+                    row = 0,
+                    column = 0,
+                    Counter::count
+                )
+            }
         }
-        eventTags = context.toEventTags()
+        tags = context.toEventTags()
     }
 
 
     override fun stop(context: StepStartStopContext) {
         meterRegistry?.apply {
-            remove(consumedKeyBytesCounter!!)
-            remove(consumedValueBytesCounter!!)
-            remove(consumedRecordsCounter!!)
             consumedKeyBytesCounter = null
             consumedValueBytesCounter = null
             consumedRecordsCounter = null
@@ -114,12 +138,12 @@ internal class KafkaConsumerSingleConverter<K, V>(
         consumedKeyBytesCounter?.increment(kafkaConsumerMeters.keysBytesReceived.toDouble())
         consumedValueBytesCounter?.increment(kafkaConsumerMeters.valuesBytesReceived.toDouble())
 
-        eventsLogger?.info("${eventPrefix}.consumed.records", kafkaConsumerMeters.recordsCount, tags = eventTags)
-        eventsLogger?.info("${eventPrefix}.consumed.key-bytes", kafkaConsumerMeters.keysBytesReceived, tags = eventTags)
+        eventsLogger?.info("${eventPrefix}.consumed.records", kafkaConsumerMeters.recordsCount, tags = tags)
+        eventsLogger?.info("${eventPrefix}.consumed.key-bytes", kafkaConsumerMeters.keysBytesReceived, tags = tags)
         eventsLogger?.info(
             "${eventPrefix}.consumed.value-bytes",
             kafkaConsumerMeters.valuesBytesReceived,
-            tags = eventTags
+            tags = tags
         )
     }
 

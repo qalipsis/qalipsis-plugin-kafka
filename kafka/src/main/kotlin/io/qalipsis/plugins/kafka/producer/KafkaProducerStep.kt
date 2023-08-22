@@ -16,7 +16,6 @@
 
 package io.qalipsis.plugins.kafka.producer
 
-import io.micrometer.core.instrument.Counter
 import io.qalipsis.api.context.StepContext
 import io.qalipsis.api.context.StepName
 import io.qalipsis.api.context.StepStartStopContext
@@ -24,6 +23,8 @@ import io.qalipsis.api.events.EventsLogger
 import io.qalipsis.api.lang.tryAndLog
 import io.qalipsis.api.logging.LoggerHelper.logger
 import io.qalipsis.api.meters.CampaignMeterRegistry
+import io.qalipsis.api.meters.Counter
+import io.qalipsis.api.report.ReportMessageSeverity
 import io.qalipsis.api.retry.RetryPolicy
 import io.qalipsis.api.steps.AbstractStep
 import org.apache.kafka.clients.producer.KafkaProducer
@@ -55,7 +56,7 @@ internal class KafkaProducerStep<I, K, V>(
     private val keySerializer: Serializer<K>,
     private val valuesSerializer: Serializer<V>,
     private val eventsLogger: EventsLogger?,
-    private val meterRegistry: CampaignMeterRegistry?
+    private val meterRegistry: CampaignMeterRegistry?,
 ) : AbstractStep<I, KafkaProducerResult<I>>(stepId, retryPolicy) {
 
     private lateinit var kafkaProducer: KafkaProducer<K, V>
@@ -66,11 +67,37 @@ internal class KafkaProducerStep<I, K, V>(
     private var recordsCount: Counter? = null
 
     override suspend fun start(context: StepStartStopContext) {
+        val tags = context.toEventTags()
+        val scenarioName = context.scenarioName
+        val stepName = context.stepName
         meterRegistry?.apply {
-            val tags = context.toMetersTags()
-            recordsCount = counter("$meterPrefix-records", tags)
-            keysBytesSent = counter("$meterPrefix-keys-bytes", tags)
-            valuesBytesSent = counter("$meterPrefix-values-bytes", tags)
+            recordsCount = counter(scenarioName, stepName, "$meterPrefix-records", tags).report {
+                display(
+                    format = "produced rec: %,.0f",
+                    severity = ReportMessageSeverity.INFO,
+                    row = 0,
+                    column = 0,
+                    Counter::count
+                )
+            }
+            keysBytesSent = counter(scenarioName, stepName, "$meterPrefix-key-bytes", tags).report {
+                display(
+                    format = "produced: %,.0f keys bytes",
+                    severity = ReportMessageSeverity.INFO,
+                    row = 0,
+                    column = 2,
+                    Counter::count
+                )
+            }
+            valuesBytesSent = counter(scenarioName, stepName, "$meterPrefix-value-bytes", tags).report {
+                display(
+                    format = "produced: %,.0f values bytes",
+                    severity = ReportMessageSeverity.INFO,
+                    row = 0,
+                    column = 1,
+                    Counter::count
+                )
+            }
         }
         kafkaProducer = buildProducer()
     }
@@ -118,9 +145,6 @@ internal class KafkaProducerStep<I, K, V>(
     override suspend fun stop(context: StepStartStopContext) {
         tryAndLog(log) { kafkaProducer.close(CLOSE_TIMEOUT) }
         meterRegistry?.apply {
-            remove(recordsCount!!)
-            remove(keysBytesSent!!)
-            remove(valuesBytesSent!!)
             recordsCount = null
             keysBytesSent = null
             valuesBytesSent = null
