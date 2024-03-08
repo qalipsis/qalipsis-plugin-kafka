@@ -59,10 +59,7 @@ internal class KafkaConsumerIterativeReader(
 
     private val consumers = mutableListOf<KafkaConsumer<*, *>>()
 
-    private lateinit var stepEventsTags: Map<String, String>
-
     override fun start(context: StepStartStopContext) {
-        stepEventsTags = context.toEventTags()
         running = true
         consumers.clear()
         executorService = Executors.newFixedThreadPool(concurrency)

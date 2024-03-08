@@ -24,7 +24,7 @@ import kotlin.math.pow
  */
 internal object Constants {
 
-    const val DOCKER_IMAGE = "confluentinc/cp-kafka:5.5.2"
+    const val DOCKER_IMAGE = "confluentinc/cp-kafka:7.6.0"
     val DOCKER_MAX_MEMORY = 512 * 1024.0.pow(2).toLong()
     const val DOCKER_CPU_COUNT = 2
     const val KAFKA_HEAP_OPTS_ENV = "KAFKA_HEAP_OPTS"
