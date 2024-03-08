@@ -53,14 +53,17 @@ internal class KafkaConsumerBatchConverter<K, V>(
 
     private val meterPrefix: String = "kafka-consume"
 
-    private lateinit var tags: Map<String, String>
+    private lateinit var metersTags: Map<String, String>
+
+    private lateinit var eventsTags: Map<String, String>
 
     override fun start(context: StepStartStopContext) {
+        eventsTags = context.toEventTags()
+        metersTags = context.toMetersTags()
         meterRegistry?.apply {
-            tags = context.toEventTags()
             val scenarioName = context.scenarioName
             val stepName = context.stepName
-            consumedKeyBytesCounter = counter(scenarioName, stepName, "$meterPrefix-key-bytes", tags).report {
+            consumedKeyBytesCounter = counter(scenarioName, stepName, "$meterPrefix-key-bytes", metersTags).report {
                 display(
                     format = "received: %,.0f key bytes",
                     severity = ReportMessageSeverity.INFO,
@@ -69,7 +72,7 @@ internal class KafkaConsumerBatchConverter<K, V>(
                     Counter::count
                 )
             }
-            consumedValueBytesCounter = counter(scenarioName, stepName, "$meterPrefix-value-bytes", tags).report {
+            consumedValueBytesCounter = counter(scenarioName, stepName, "$meterPrefix-value-bytes", metersTags).report {
                 display(
                     format = "received: %,.0f value bytes",
                     severity = ReportMessageSeverity.INFO,
@@ -78,7 +81,7 @@ internal class KafkaConsumerBatchConverter<K, V>(
                     Counter::count
                 )
             }
-            consumedRecordsCounter = counter(scenarioName, stepName, "$meterPrefix-records", tags).report {
+            consumedRecordsCounter = counter(scenarioName, stepName, "$meterPrefix-records", metersTags).report {
                 display(
                     format = "received rec: %,.0f",
                     severity = ReportMessageSeverity.INFO,
@@ -88,7 +91,6 @@ internal class KafkaConsumerBatchConverter<K, V>(
                 )
             }
         }
-        tags = context.toEventTags()
     }
 
 
@@ -126,12 +128,16 @@ internal class KafkaConsumerBatchConverter<K, V>(
         consumedKeyBytesCounter?.increment(kafkaConsumerMeters.keysBytesReceived.toDouble())
         consumedValueBytesCounter?.increment(kafkaConsumerMeters.valuesBytesReceived.toDouble())
 
-        eventsLogger?.info("${eventPrefix}.consumed.records", kafkaConsumerMeters.recordsCount, tags = tags)
-        eventsLogger?.info("${eventPrefix}.consumed.key-bytes", kafkaConsumerMeters.keysBytesReceived, tags = tags)
+        eventsLogger?.info("${eventPrefix}.consumed.records", kafkaConsumerMeters.recordsCount, tags = eventsTags)
+        eventsLogger?.info(
+            "${eventPrefix}.consumed.key-bytes",
+            kafkaConsumerMeters.keysBytesReceived,
+            tags = eventsTags
+        )
         eventsLogger?.info(
             "${eventPrefix}.consumed.value-bytes",
             kafkaConsumerMeters.valuesBytesReceived,
-            tags = tags
+            tags = eventsTags
         )
         tryAndLogOrNull(log) {
             output.send(

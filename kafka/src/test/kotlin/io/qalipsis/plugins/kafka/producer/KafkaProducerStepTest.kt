@@ -19,6 +19,7 @@ package io.qalipsis.plugins.kafka.producer
 import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
+import io.mockk.mockk
 import io.mockk.spyk
 import io.mockk.verifyOrder
 import io.qalipsis.api.context.StepContext
@@ -104,7 +105,7 @@ internal class KafkaProducerStepTest {
     @Test
     fun `should produce recording metrics without record key`() = testDispatcherProvider.runTest {
         // given
-        val tags: Map<String, String> = emptyMap()
+        val metersTags: Map<String, String> = mockk()
         recordsBuilder = { _, _ ->
             listOf(
                 KafkaProducerRecord(
@@ -121,14 +122,35 @@ internal class KafkaProducerStepTest {
                 )
             )
         }
-        every { meterRegistry.counter("scenario-name", "step-name", "kafka-produce-value-bytes", refEq(tags)) } returns valuesBytesSent
+        every {
+            meterRegistry.counter(
+                "scenario-name",
+                "step-name",
+                "kafka-produce-value-bytes",
+                refEq(metersTags)
+            )
+        } returns valuesBytesSent
         every { valuesBytesSent.report(any()) } returns valuesBytesSent
-        every { meterRegistry.counter("scenario-name", "step-name", "kafka-produce-key-bytes", refEq(tags)) } returns keysBytesSent
+        every {
+            meterRegistry.counter(
+                "scenario-name",
+                "step-name",
+                "kafka-produce-key-bytes",
+                refEq(metersTags)
+            )
+        } returns keysBytesSent
         every { keysBytesSent.report(any()) } returns keysBytesSent
-        every { meterRegistry.counter("scenario-name", "step-name", "kafka-produce-records", refEq(tags)) } returns recordsCount
+        every {
+            meterRegistry.counter(
+                "scenario-name",
+                "step-name",
+                "kafka-produce-records",
+                refEq(metersTags)
+            )
+        } returns recordsCount
         every { recordsCount.report(any()) } returns recordsCount
 
-        every { startStopContext.toEventTags() } returns tags
+        every { startStopContext.toMetersTags() } returns metersTags
         every { startStopContext.scenarioName } returns "scenario-name"
         every { startStopContext.stepName } returns "step-name"
 
@@ -140,8 +162,9 @@ internal class KafkaProducerStepTest {
         )
         every { kafkaProducerStep["buildProducer"]() } returns relaxedMockk<KafkaProducer<*, *>>()
 
+        val eventsTags: Map<String, String> = mockk()
         val context = spyk(StepTestHelper.createStepContext<Any, KafkaProducerResult<Any>>(input = "Any")) {
-            every { toEventTags() } returns tags
+            every { toEventTags() } returns eventsTags
         }
 
         // when
@@ -150,18 +173,18 @@ internal class KafkaProducerStepTest {
 
         //then
         verifyOrder {
-            meterRegistry.counter("scenario-name", "step-name", "kafka-produce-records", refEq(tags))
+            meterRegistry.counter("scenario-name", "step-name", "kafka-produce-records", refEq(metersTags))
             recordsCount.report(any<Meter.ReportingConfiguration<Counter>.() -> Unit>())
-            meterRegistry.counter("scenario-name", "step-name", "kafka-produce-key-bytes", refEq(tags))
+            meterRegistry.counter("scenario-name", "step-name", "kafka-produce-key-bytes", refEq(metersTags))
             keysBytesSent.report(any<Meter.ReportingConfiguration<Counter>.() -> Unit>())
-            meterRegistry.counter("scenario-name", "step-name", "kafka-produce-value-bytes", refEq(tags))
+            meterRegistry.counter("scenario-name", "step-name", "kafka-produce-value-bytes", refEq(metersTags))
             valuesBytesSent.report(any<Meter.ReportingConfiguration<Counter>.() -> Unit>())
             recordsCount.increment(3.0)
             keysBytesSent.increment(0.0)
             valuesBytesSent.increment(30.0)
-            eventsLogger.info("kafka.produce.sent.records", 3, any(), tags = refEq(tags))
-            eventsLogger.info("kafka.produce.sent.keys-bytes", 0, any(), tags = refEq(tags))
-            eventsLogger.info("kafka.produce.sent.values-bytes", 30, any(), tags = refEq(tags))
+            eventsLogger.info("kafka.produce.sent.records", 3, any(), tags = refEq(eventsTags))
+            eventsLogger.info("kafka.produce.sent.keys-bytes", 0, any(), tags = refEq(eventsTags))
+            eventsLogger.info("kafka.produce.sent.values-bytes", 30, any(), tags = refEq(eventsTags))
         }
 
         confirmVerified(recordsCount, keysBytesSent, valuesBytesSent, eventsLogger, meterRegistry)
@@ -170,7 +193,7 @@ internal class KafkaProducerStepTest {
     @Test
     fun `should produce recording metrics with record key`() = testDispatcherProvider.runTest {
         // given
-        val tags: Map<String, String> = emptyMap()
+        val metersTags: Map<String, String> = emptyMap()
         recordsBuilder = { _, _ ->
             listOf(
                 KafkaProducerRecord(
@@ -190,14 +213,35 @@ internal class KafkaProducerStepTest {
                 )
             )
         }
-        every { meterRegistry.counter("scenario-name", "step-name", "kafka-produce-value-bytes", refEq(tags)) } returns valuesBytesSent
+        every {
+            meterRegistry.counter(
+                "scenario-name",
+                "step-name",
+                "kafka-produce-value-bytes",
+                refEq(metersTags)
+            )
+        } returns valuesBytesSent
         every { valuesBytesSent.report(any()) } returns valuesBytesSent
-        every { meterRegistry.counter("scenario-name", "step-name", "kafka-produce-key-bytes", refEq(tags)) } returns keysBytesSent
+        every {
+            meterRegistry.counter(
+                "scenario-name",
+                "step-name",
+                "kafka-produce-key-bytes",
+                refEq(metersTags)
+            )
+        } returns keysBytesSent
         every { keysBytesSent.report(any()) } returns keysBytesSent
-        every { meterRegistry.counter("scenario-name", "step-name", "kafka-produce-records", refEq(tags)) } returns recordsCount
+        every {
+            meterRegistry.counter(
+                "scenario-name",
+                "step-name",
+                "kafka-produce-records",
+                refEq(metersTags)
+            )
+        } returns recordsCount
         every { recordsCount.report(any()) } returns recordsCount
 
-        every { startStopContext.toEventTags() } returns tags
+        every { startStopContext.toMetersTags() } returns metersTags
         every { startStopContext.scenarioName } returns "scenario-name"
         every { startStopContext.stepName } returns "step-name"
 
@@ -210,8 +254,9 @@ internal class KafkaProducerStepTest {
 
         every { kafkaProducerStep["buildProducer"]() } returns relaxedMockk<KafkaProducer<*, *>>()
 
+        val eventsTags: Map<String, String> = mockk()
         val context = spyk(StepTestHelper.createStepContext<Any, KafkaProducerResult<Any>>(input = "Any")) {
-            every { toEventTags() } returns tags
+            every { toEventTags() } returns eventsTags
         }
 
         // when
@@ -220,18 +265,18 @@ internal class KafkaProducerStepTest {
 
         //then
         verifyOrder {
-            meterRegistry.counter("scenario-name", "step-name", "kafka-produce-records", refEq(tags))
+            meterRegistry.counter("scenario-name", "step-name", "kafka-produce-records", refEq(metersTags))
             recordsCount.report(any<Meter.ReportingConfiguration<Counter>.() -> Unit>())
-            meterRegistry.counter("scenario-name", "step-name", "kafka-produce-key-bytes", refEq(tags))
+            meterRegistry.counter("scenario-name", "step-name", "kafka-produce-key-bytes", refEq(metersTags))
             keysBytesSent.report(any<Meter.ReportingConfiguration<Counter>.() -> Unit>())
-            meterRegistry.counter("scenario-name", "step-name", "kafka-produce-value-bytes", refEq(tags))
+            meterRegistry.counter("scenario-name", "step-name", "kafka-produce-value-bytes", refEq(metersTags))
             valuesBytesSent.report(any<Meter.ReportingConfiguration<Counter>.() -> Unit>())
             recordsCount.increment(3.0)
             keysBytesSent.increment(eq(18.0))
             valuesBytesSent.increment(eq(30.0))
-            eventsLogger.info("kafka.produce.sent.records", 3, any(), tags = refEq(tags))
-            eventsLogger.info("kafka.produce.sent.keys-bytes", 18, any(), tags = refEq(tags))
-            eventsLogger.info("kafka.produce.sent.values-bytes", 30, any(), tags = refEq(tags))
+            eventsLogger.info("kafka.produce.sent.records", 3, any(), tags = refEq(eventsTags))
+            eventsLogger.info("kafka.produce.sent.keys-bytes", 18, any(), tags = refEq(eventsTags))
+            eventsLogger.info("kafka.produce.sent.values-bytes", 30, any(), tags = refEq(eventsTags))
         }
 
         confirmVerified(recordsCount, keysBytesSent, valuesBytesSent, eventsLogger, meterRegistry)

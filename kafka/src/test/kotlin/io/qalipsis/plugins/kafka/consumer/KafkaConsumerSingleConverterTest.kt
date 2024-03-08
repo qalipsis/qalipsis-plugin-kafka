@@ -28,6 +28,7 @@ import assertk.assertions.prop
 import io.mockk.coEvery
 import io.mockk.confirmVerified
 import io.mockk.every
+import io.mockk.mockk
 import io.mockk.verify
 import io.mockk.verifyOrder
 import io.qalipsis.api.context.StepStartStopContext
@@ -73,8 +74,13 @@ internal class KafkaConsumerSingleConverterTest {
 
     private val counter: Counter = relaxedMockk {}
 
+    private val metersTags = mockk<Map<String, String>>()
+
+    private val eventsTags = mockk<Map<String, String>>()
+
     private val startStopContext = relaxedMockk<StepStartStopContext> {
-        every { toEventTags() } returns emptyMap()
+        every { toMetersTags() } returns metersTags
+        every { toEventTags() } returns eventsTags
         every { scenarioName } returns "scenario-name"
         every { stepName } returns "step-name"
     }
@@ -87,15 +93,13 @@ internal class KafkaConsumerSingleConverterTest {
 
     private val eventsLogger = relaxedMockk<EventsLogger>()
 
-    private val tags: Map<String, String> = startStopContext.toEventTags()
-
     private val meterRegistry = relaxedMockk<CampaignMeterRegistry> {
         every {
             counter(
                 "scenario-name",
                 "step-name",
                 "kafka-consume-key-bytes",
-                refEq(tags)
+                refEq(metersTags)
             )
         } returns consumedKeyBytesCounter
         every { consumedKeyBytesCounter.report(any()) } returns consumedKeyBytesCounter
@@ -104,7 +108,7 @@ internal class KafkaConsumerSingleConverterTest {
                 "scenario-name",
                 "step-name",
                 "kafka-consume-value-bytes",
-                refEq(tags)
+                refEq(metersTags)
             )
         } returns consumedValueBytesCounter
         every { consumedValueBytesCounter.report(any()) } returns consumedValueBytesCounter
@@ -113,7 +117,7 @@ internal class KafkaConsumerSingleConverterTest {
                 "scenario-name",
                 "step-name",
                 "kafka-consume-records",
-                refEq(tags)
+                refEq(metersTags)
             )
         } returns consumedRecordsCounter
         every { consumedRecordsCounter.report(any()) } returns consumedRecordsCounter
@@ -147,9 +151,9 @@ internal class KafkaConsumerSingleConverterTest {
             consumedKeyBytesCounter.increment(22.0)
             consumedValueBytesCounter.increment(44.0)
 
-            eventsLogger.info("kafka.consume.consumed.records", 3, any(), tags = tags)
-            eventsLogger.info("kafka.consume.consumed.key-bytes", 22, any(), tags = tags)
-            eventsLogger.info("kafka.consume.consumed.value-bytes", 44, any(), tags = (tags))
+            eventsLogger.info("kafka.consume.consumed.records", 3, any(), tags = refEq(eventsTags))
+            eventsLogger.info("kafka.consume.consumed.key-bytes", 22, any(), tags = refEq(eventsTags))
+            eventsLogger.info("kafka.consume.consumed.value-bytes", 44, any(), tags = refEq(eventsTags))
         }
 
         confirmVerified(

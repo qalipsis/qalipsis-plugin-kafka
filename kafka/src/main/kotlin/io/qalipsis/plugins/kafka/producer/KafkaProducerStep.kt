@@ -60,14 +60,19 @@ internal class KafkaProducerStep<I, K, V>(
 ) : AbstractStep<I, KafkaProducerResult<I>>(stepId, retryPolicy) {
 
     private lateinit var kafkaProducer: KafkaProducer<K, V>
+
     private val eventPrefix = "kafka.produce"
+
     private val meterPrefix = "kafka-produce"
+
     private var keysBytesSent: Counter? = null
+
     private var valuesBytesSent: Counter? = null
+
     private var recordsCount: Counter? = null
 
     override suspend fun start(context: StepStartStopContext) {
-        val tags = context.toEventTags()
+        val tags = context.toMetersTags()
         val scenarioName = context.scenarioName
         val stepName = context.stepName
         meterRegistry?.apply {
