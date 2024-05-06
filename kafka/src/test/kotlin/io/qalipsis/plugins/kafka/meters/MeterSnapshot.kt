@@ -22,45 +22,56 @@ import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import java.time.Instant
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "@type")
 @JsonSubTypes(
-    JsonSubTypes.Type(value = Gauge::class, name = "gauge"),
-    JsonSubTypes.Type(value = Counter::class, name = "counter"),
-    JsonSubTypes.Type(value = Timer::class, name = "timer")
+    JsonSubTypes.Type(value = GaugeSnapshot::class, name = "gauge"),
+    JsonSubTypes.Type(value = CounterSnapshot::class, name = "counter"),
+    JsonSubTypes.Type(value = TimerSnapshot::class, name = "timer"),
+    JsonSubTypes.Type(value = DistributionSummarySnapshot::class, name = "summary")
 )
-abstract class Meter {
+abstract class MeterSnapshot {
     var timestamp: Instant? = null
     var name: String? = null
+    var type: String? = null
 
     @JsonAnySetter
     @JsonAnyGetter
-    val tags: MutableMap<String, Any> = mutableMapOf()
+    val others: MutableMap<String, Any> = mutableMapOf()
 }
 
-class Gauge : Meter() {
+class GaugeSnapshot : MeterSnapshot() {
     var value: Double? = null
     override fun toString(): String {
-        return "Gauge(name=$name, tags=$tags, timestamp=$timestamp, value=$value)"
+        return "Gauge(name=$name, type=$type, others=$others, timestamp=$timestamp, value=$value)"
     }
 
 
 }
 
-class Counter : Meter() {
+class CounterSnapshot : MeterSnapshot() {
     var count: Int? = null
     override fun toString(): String {
-        return "Counter(name=$name, tags=$tags, timestamp=$timestamp, count=$count)"
+        return "Counter(name=$name,  type=$type, others=$others, timestamp=$timestamp, count=$count)"
     }
 
 }
 
-class Timer : Meter() {
-    var count: Int? = null
+class TimerSnapshot : MeterSnapshot() {
     var sum: Double? = null
     var mean: Double? = null
     var max: Double? = null
     override fun toString(): String {
-        return "Timer(name=$name, tags=$tags, timestamp=$timestamp, count=$count, sum=$sum, mean=$mean, max=$max)"
+        return "Timer(name=$name, type=$type, others=$others, timestamp=$timestamp, sum=$sum, mean=$mean, max=$max)"
+    }
+
+}
+
+class DistributionSummarySnapshot : MeterSnapshot() {
+    var sum: Double? = null
+    var mean: Double? = null
+    var max: Double? = null
+    override fun toString(): String {
+        return "DistributionSummary(name=$name, type=$type, others=$others, timestamp=$timestamp, sum=$sum, mean=$mean, max=$max)"
     }
 
 }

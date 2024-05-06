@@ -16,21 +16,16 @@
 
 package io.qalipsis.plugins.kafka.meters
 
-import io.micrometer.core.instrument.Counter
-import io.micrometer.core.instrument.DistributionSummary
-import io.micrometer.core.instrument.FunctionCounter
-import io.micrometer.core.instrument.FunctionTimer
-import io.micrometer.core.instrument.Gauge
-import io.micrometer.core.instrument.LongTaskTimer
-import io.micrometer.core.instrument.Meter
-import io.micrometer.core.instrument.TimeGauge
-import io.micrometer.core.instrument.Timer
-import io.micrometer.core.instrument.util.StringEscapeUtils
+import io.qalipsis.api.meters.Counter
+import io.qalipsis.api.meters.DistributionMeasurementMetric
+import io.qalipsis.api.meters.DistributionSummary
+import io.qalipsis.api.meters.Gauge
+import io.qalipsis.api.meters.MeterSnapshot
+import io.qalipsis.api.meters.Statistic
+import io.qalipsis.api.meters.Timer
+import io.qalipsis.api.meters.UnsupportedMeterException
+import org.apache.commons.text.StringEscapeUtils
 import org.apache.kafka.common.serialization.Serializer
-import java.time.Instant
-import java.time.format.DateTimeFormatter
-import java.util.Locale
-import java.util.concurrent.TimeUnit
 import java.util.function.Consumer
 
 /**
@@ -39,155 +34,99 @@ import java.util.function.Consumer
  * Author: Palina Bril
  */
 internal class JsonMeterSerializer(
-    private val meterRegistry: KafkaMeterRegistry,
-    private val timeUnit: TimeUnit,
     private val timestampFieldName: String,
-) : Serializer<Meter> {
+) : Serializer<MeterSnapshot<*>> {
 
-    override fun serialize(topic: String, meter: Meter): ByteArray? {
-        val data = when (meter) {
-            is TimeGauge -> writeTimeGauge(meter)
-            is Gauge -> writeGauge(meter)
-            is Counter -> writeCounter(meter)
-            is Timer -> writeTimer(meter)
-            is DistributionSummary -> writeSummary(meter)
-            is LongTaskTimer -> writeLongTaskTimer(meter)
-            is FunctionCounter -> writeFunctionCounter(meter)
-            is FunctionTimer -> writeFunctionTimer(meter)
-            else -> writeMeter(meter)
+    override fun serialize(topic: String, meterSnapshot: MeterSnapshot<*>): ByteArray {
+        val data = when (meterSnapshot.meter) {
+            is Gauge -> writeGauge(meterSnapshot)
+            is Counter -> writeCounter(meterSnapshot)
+            is Timer -> writeTimer(meterSnapshot)
+            is DistributionSummary -> writeSummary(meterSnapshot)
+            else -> throw UnsupportedMeterException("Meter ${meterSnapshot.meter} not supported")
         }
-        return data?.encodeToByteArray()
-    }
-
-    /**
-     * Kafka serializer for Counter.
-     */
-    private fun writeCounter(counter: Counter): String {
-        return writeCounter(counter, counter.count())
-    }
-
-    /**
-     * Kafka serializer for FunctionCounter.
-     */
-    private fun writeFunctionCounter(counter: FunctionCounter): String {
-        return writeCounter(counter, counter.count())
+        return data.encodeToByteArray()
     }
 
     /**
      * Kafka serializer for Counter with value.
      */
-    private fun writeCounter(meter: Meter, value: Double): String {
-        return if (java.lang.Double.isFinite(value)) {
-            write(meter) { builder: StringBuilder -> builder.append(",\"count\":").append(value) }
-        } else write(meter) { builder: StringBuilder -> builder }
+    private fun writeCounter(counterSnapshot: MeterSnapshot<*>): String {
+        return counterSnapshot.measurements.joinToString(",") {
+            val value = it.value
+            if (java.lang.Double.isFinite(value)) {
+                write(counterSnapshot) { builder: StringBuilder -> builder.append(",\"count\":").append(value) }
+            } else {write(counterSnapshot) { builder: StringBuilder -> builder }}
+        }
     }
 
     /**
      * Kafka serializer for Gauge.
      */
-    private fun writeGauge(gauge: Gauge): String {
-        val value = gauge.value()
-        return if (java.lang.Double.isFinite(value)) {
-            write(gauge) { builder: StringBuilder -> builder.append(",\"value\":").append(value) }
-        } else write(gauge) { builder: StringBuilder -> builder }
-    }
-
-    /**
-     * Kafka serializer for TimeGauge.
-     */
-    private fun writeTimeGauge(gauge: TimeGauge): String {
-        val value = gauge.value(timeUnit)
-        return if (java.lang.Double.isFinite(value)) {
-            write(gauge) { builder: StringBuilder -> builder.append(",\"value\":").append(value) }
-        } else write(gauge) { builder: StringBuilder -> builder }
-    }
-
-    /**
-     * Kafka serializer for FunctionTimer.
-     */
-    private fun writeFunctionTimer(timer: FunctionTimer): String {
-        val sum = timer.totalTime(timeUnit)
-        val mean = timer.mean(timeUnit)
-        return write(timer) { builder: StringBuilder ->
-            builder.append(",\"count\":").append(timer.count())
-            builder.append(",\"sum\":").append(sum)
-            builder.append(",\"mean\":").append(mean)
-        }
-    }
-
-    /**
-     * Kafka serializer for LongTaskTimer.
-     */
-    private fun writeLongTaskTimer(timer: LongTaskTimer): String {
-        return write(timer) { builder: StringBuilder ->
-            builder.append(",\"activeTasks\":").append(timer.activeTasks())
-            builder.append(",\"duration\":").append(timer.duration(timeUnit))
+    private fun writeGauge(gaugeSnapshot: MeterSnapshot<*>): String {
+        return gaugeSnapshot.measurements.joinToString(",") {
+            val value = it.value
+            if (java.lang.Double.isFinite(value)) {
+                write(gaugeSnapshot) { builder: StringBuilder -> builder.append(",\"value\":").append(value) }
+            } else {write(gaugeSnapshot) { builder: StringBuilder -> builder }}
         }
     }
 
     /**
      * Kafka serializer for Timer.
      */
-    private fun writeTimer(timer: Timer): String {
-        return write(timer) { builder: StringBuilder ->
-            builder.append(",\"count\":").append(timer.count())
-            builder.append(",\"sum\":").append(timer.totalTime(timeUnit))
-            builder.append(",\"mean\":").append(timer.mean(timeUnit))
-            builder.append(",\"max\":").append(timer.max(timeUnit))
+    private fun writeTimer(timerSnapshot: MeterSnapshot<*>): String {
+        val intermediaryString = StringBuilder()
+        timerSnapshot.measurements.forEach {
+            when (it.statistic) {
+                Statistic.COUNT -> intermediaryString.append(",\"count\":").append(it.value)
+                Statistic.TOTAL_TIME -> intermediaryString.append(",\"sum\":").append(it.value)
+                Statistic.MEAN -> intermediaryString.append(",\"mean\":").append(it.value)
+                Statistic.MAX -> intermediaryString.append(",\"max\":").append(it.value)
+                Statistic.PERCENTILE -> {
+                    it as DistributionMeasurementMetric
+                    intermediaryString.append(",\"percentile_${it.observationPoint}\":").append(it.value)
+                }
+
+                else -> intermediaryString
+            }
         }
+        return write(timerSnapshot) { builder: StringBuilder -> builder.append(intermediaryString) }
     }
 
     /**
      * Kafka serializer for DistributionSummary.
      */
-    private fun writeSummary(summary: DistributionSummary): String {
-        val histogramSnapshot = summary.takeSnapshot()
-        return write(summary) { builder: StringBuilder ->
-            builder.append(",\"count\":").append(histogramSnapshot.count())
-            builder.append(",\"sum\":").append(histogramSnapshot.total())
-            builder.append(",\"mean\":").append(histogramSnapshot.mean())
-            builder.append(",\"max\":").append(histogramSnapshot.max())
+    private fun writeSummary(summarySnapshot: MeterSnapshot<*>): String {
+        val intermediaryString = StringBuilder()
+        summarySnapshot.measurements.forEach {
+            when (it.statistic) {
+                Statistic.COUNT -> intermediaryString.append(",\"count\":").append(it.value)
+                Statistic.TOTAL -> intermediaryString.append(",\"sum\":").append(it.value)
+                Statistic.MEAN -> intermediaryString.append(",\"mean\":").append(it.value)
+                Statistic.MAX -> intermediaryString.append(",\"max\":").append(it.value)
+                Statistic.PERCENTILE -> {
+                    it as DistributionMeasurementMetric
+                    intermediaryString.append(",\"percentile_${it.observationPoint}\":").append(it.value)
+                }
+                else -> intermediaryString
+            }
         }
+
+        return write(summarySnapshot) { builder: StringBuilder -> builder.append(intermediaryString) }
     }
 
     /**
-     * Kafka further serializer for previous kinds of Meter
+     * Kafka final serializer for all kinds of Measurements.
      */
-    private fun writeMeter(meter: Meter): String? {
-        val measurements = meter.measure()
-        val names = mutableListOf<String>()
-        // Snapshot values should be used throughout this method as there are chances for values to be changed in-between.
-        val values = mutableListOf<Double>()
-        for (measurement in measurements) {
-            val value = measurement.value
-            if (!java.lang.Double.isFinite(value)) {
-                continue
-            }
-            names.add(measurement.statistic.tagValueRepresentation)
-            values.add(value)
-        }
-        return if (names.isEmpty()) {
-            null
-        } else {
-            write(meter) { builder: StringBuilder ->
-                for (i in names.indices) builder.append(",\"").append(names[i])
-                    .append("\":\"").append(values[i]).append("\"")
-            }
-        }
-    }
-
-    /**
-     * Kafka final serializer for all kinds of Meter
-     */
-    private fun write(meter: Meter, consumer: Consumer<StringBuilder>): String {
+    private fun write(meterSnapshot: MeterSnapshot<*>, consumer: Consumer<StringBuilder>): String {
         val sb: StringBuilder = StringBuilder("")
-        val timestamp = generateTimestamp()
-        val name = meterRegistry.getName(meter)
-        val type = meter.id.type.toString().lowercase(Locale.getDefault())
-        sb.append("{\"").append(timestampFieldName).append("\":\"").append(timestamp).append('"')
+        val meterId = meterSnapshot.meter.id
+        val name = meterId.meterName
+        sb.append("{\"").append(timestampFieldName).append("\":\"").append(meterSnapshot.timestamp).append('"')
             .append(",\"name\":\"").append(StringEscapeUtils.escapeJson(name)).append('"')
-            .append(",\"type\":\"").append(type).append('"')
-        val tags = meterRegistry.getTags(meter)
+            .append(",\"@type\":\"").append(meterId.type.value).append('"')
+        val tags = meterId.tags
         for (tag in tags) {
             sb.append(",\"").append(StringEscapeUtils.escapeJson(tag.key)).append("\":\"")
                 .append(StringEscapeUtils.escapeJson(tag.value)).append('"')
@@ -195,9 +134,5 @@ internal class JsonMeterSerializer(
         consumer.accept(sb)
         sb.append('}')
         return sb.toString()
-    }
-
-    private fun generateTimestamp(): String? {
-        return DateTimeFormatter.ISO_INSTANT.format(Instant.ofEpochMilli(meterRegistry.config().clock().wallTime()))
     }
 }

@@ -16,64 +16,65 @@
 
 package io.qalipsis.plugins.kafka.meters
 
-import io.micrometer.core.instrument.config.MeterRegistryConfigValidator
-import io.micrometer.core.instrument.config.validate.PropertyValidator
-import io.micrometer.core.instrument.config.validate.Validated
-import io.micrometer.core.instrument.step.StepRegistryConfig
+import io.micronaut.context.annotation.ConfigurationProperties
+import io.micronaut.context.annotation.Requires
+import io.micronaut.context.env.Environment
+import io.micronaut.core.util.StringUtils
+import io.qalipsis.api.config.MetersConfig
+import io.qalipsis.plugins.kafka.meters.KafkaMeterConfig.Companion.KAFKA_CONFIGURATION
+import io.qalipsis.plugins.kafka.meters.KafkaMeterConfig.Companion.KAFKA_ENABLED
 import org.apache.kafka.clients.producer.ProducerConfig
 import java.util.Properties
+import javax.validation.constraints.NotBlank
+import kotlin.jvm.optionals.getOrNull
 
 
 /**
- * {@link MeterRegistry} for Kafka
+ * Configuration properties for Kafka.
  *
  * @author Palina Bril
  */
-abstract class KafkaMeterConfig : StepRegistryConfig {
+@Requires(property = KAFKA_ENABLED, value = StringUtils.TRUE)
+@ConfigurationProperties(KAFKA_CONFIGURATION)
+internal class KafkaMeterConfig(private val environment: Environment) {
 
-    override fun prefix(): String {
-        return "kafka"
-    }
+    @get:NotBlank
+    var prefix: String = "qalipsis"
 
-    fun configuration(): Properties {
-        val properties = Properties()
-        properties[ProducerConfig.BATCH_SIZE_CONFIG] = batchSize()
-        properties[ProducerConfig.LINGER_MS_CONFIG] = lingerMs()
-        ProducerConfig.configNames().forEach { producerConfigKey ->
-            PropertyValidator.getString(this, "configuration.${producerConfigKey}").orElse(null)?.let { configValue ->
-                properties[producerConfigKey] = configValue
-            }
-        }
-
-        PropertyValidator.getString(this, ProducerConfig.BOOTSTRAP_SERVERS_CONFIG)
-            .orElse("localhost:9092")?.let { configValue ->
-                properties[ProducerConfig.BOOTSTRAP_SERVERS_CONFIG] = configValue
-            }
-
-        return properties
-    }
-
-    fun topic(): String {
-        return PropertyValidator.getString(this, "topic").orElse("qalipsis-meters")
-    }
-
-    private fun lingerMs(): String {
-        return PropertyValidator.getInteger(this, ProducerConfig.LINGER_MS_CONFIG).orElse(1000).toString()
-    }
+    @get:NotBlank
+    var topic: String = "qalipsis-meters"
 
     /**
      * The name of the timestamp field. Default is: "timestamp"
      *
      * @return field name for timestamp
      */
-    fun timestampFieldName(): String {
-        return PropertyValidator.getString(this, "timestampFieldName").orElse("timestamp")
+    @get:NotBlank
+    var timestampFieldName: String = "timestamp"
+
+    fun configuration(): Properties {
+
+        val properties = Properties()
+        properties[ProducerConfig.BATCH_SIZE_CONFIG] =
+            environment.getProperty("${KAFKA_CONFIGURATION}.batch-size", Int::class.java).getOrNull() ?: 1
+        properties[ProducerConfig.LINGER_MS_CONFIG] =
+            environment.getProperty("${KAFKA_CONFIGURATION}.linger.ms", String::class.java).getOrNull() ?: "1000"
+        ProducerConfig.configNames().forEach { producerConfigKey ->
+            environment.getProperty("${KAFKA_CONFIGURATION}.configuration.$producerConfigKey", String::class.java)
+                .orElse(null)?.let { configValue ->
+                    properties[producerConfigKey] = configValue
+                }
+        }
+        properties[ProducerConfig.BOOTSTRAP_SERVERS_CONFIG] =
+            environment.getProperty("${KAFKA_CONFIGURATION}.bootstrap.servers", String::class.java).getOrNull()
+                ?: "localhost:9092"
+        return properties
     }
 
-    override fun validate(): Validated<*> {
-        return MeterRegistryConfigValidator.checkAll(this,
-            { c: KafkaMeterConfig -> StepRegistryConfig.validate(c) },
-            MeterRegistryConfigValidator.checkRequired("topic") { obj: KafkaMeterConfig -> obj.topic() }
-        )
+    companion object {
+
+        const val KAFKA_CONFIGURATION = "${MetersConfig.EXPORT_CONFIGURATION}.kafka"
+
+        const val KAFKA_ENABLED = "$KAFKA_CONFIGURATION.enabled"
     }
 }

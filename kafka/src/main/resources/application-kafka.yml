@@ -2,7 +2,6 @@ meters:
   export:
     kafka:
       enabled: false
-      step: PT10S
       bootstrap.servers: localhost:9092
       topic: qalipsis-meters
       linger.ms: 5000
