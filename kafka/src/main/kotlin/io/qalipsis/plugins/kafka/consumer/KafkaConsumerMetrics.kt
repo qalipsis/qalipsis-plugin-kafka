@@ -16,21 +16,21 @@
 
 package io.qalipsis.plugins.kafka.consumer
 
-import io.micrometer.core.instrument.Counter
+import io.qalipsis.api.meters.Counter
 
 /**
  * Records the metrics for the Kafka producer.
  *
  * @property consumedKeyBytesCounter records the number of bytes consumed for the serialized keys.
  * @property consumedValueBytesCounter records the number of bytes consumed for the serialized values.
- * @property recordconsumedRecordsCountersCount counts the number of records consumed.
+ * @property consumedRecordsCounter counts the number of records consumed.
  *
  * @author Alex Averyanov
  */
 internal class KafkaConsumerMetrics(
-    var consumedKeyBytesCounter: Counter? = null,
-    var consumedValueBytesCounter: Counter? = null,
-    var consumedRecordsCounter: Counter? = null
+    private var consumedKeyBytesCounter: Counter? = null,
+    private var consumedValueBytesCounter: Counter? = null,
+    private var consumedRecordsCounter: Counter? = null
 ) {
 
     fun countKeyBytes(size: Int) {

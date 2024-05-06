@@ -20,17 +20,17 @@ import assertk.assertThat
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isNotEmpty
-import io.micrometer.core.instrument.MeterRegistry
 import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest
 import io.micronaut.test.support.TestPropertyProvider
-import io.qalipsis.plugins.kafka.meters.KafkaMeterRegistry
+import io.qalipsis.api.meters.CampaignMeterRegistry
+import io.qalipsis.plugins.kafka.meters.KafkaMeasurementPublisher
 import jakarta.inject.Inject
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 
-internal class KafkaMeterRegistryFactoryIntegrationTest {
+internal class KafkaMeasurementPublisherFactoryIntegrationTest {
 
     @Nested
     @MicronautTest(startApplication = false, environments = ["kafka"])
@@ -49,8 +49,8 @@ internal class KafkaMeterRegistryFactoryIntegrationTest {
         @Test
         @Timeout(10)
         internal fun `should start without kafka meter registry`() {
-            assertThat(applicationContext.getBeansOfType(MeterRegistry::class.java)).isNotEmpty()
-            assertThat(applicationContext.getBeansOfType(KafkaMeterRegistry::class.java)).isEmpty()
+            assertThat(applicationContext.getBeansOfType(KafkaMeasurementPublisherFactory::class.java)).isEmpty()
+            assertThat(applicationContext.getBeansOfType(KafkaMeasurementPublisher::class.java)).isEmpty()
         }
     }
 
@@ -71,14 +71,14 @@ internal class KafkaMeterRegistryFactoryIntegrationTest {
         @Test
         @Timeout(10)
         internal fun `should start without kafka meter registry`() {
-            assertThat(applicationContext.getBeansOfType(MeterRegistry::class.java)).isNotEmpty()
-            assertThat(applicationContext.getBeansOfType(KafkaMeterRegistry::class.java)).isEmpty()
+            assertThat(applicationContext.getBeansOfType(KafkaMeasurementPublisherFactory::class.java)).isEmpty()
+            assertThat(applicationContext.getBeansOfType(KafkaMeasurementPublisher::class.java)).isEmpty()
         }
     }
 
     @Nested
     @MicronautTest(startApplication = false, environments = ["kafka"])
-    inner class WithKafkaMeterRegistry : TestPropertyProvider {
+    inner class WithKafkaMeasurementPublisher : TestPropertyProvider {
 
         @Inject
         private lateinit var applicationContext: ApplicationContext
@@ -93,8 +93,8 @@ internal class KafkaMeterRegistryFactoryIntegrationTest {
         @Test
         @Timeout(10)
         internal fun `should start with kafka meter registry`() {
-            assertThat(applicationContext.getBeansOfType(MeterRegistry::class.java)).isNotEmpty()
-            assertThat(applicationContext.getBeansOfType(KafkaMeterRegistry::class.java)).hasSize(1)
+            assertThat(applicationContext.getBeansOfType(CampaignMeterRegistry::class.java)).isNotEmpty()
+            assertThat(applicationContext.getBeansOfType(KafkaMeasurementPublisherFactory::class.java)).hasSize(1)
         }
     }
 

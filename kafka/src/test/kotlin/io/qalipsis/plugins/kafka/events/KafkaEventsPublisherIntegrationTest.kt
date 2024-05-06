@@ -20,10 +20,10 @@ import assertk.all
 import assertk.assertThat
 import assertk.assertions.containsExactly
 import assertk.assertions.hasSameSizeAs
-import io.micrometer.core.instrument.MeterRegistry
 import io.mockk.every
 import io.qalipsis.api.events.*
 import io.qalipsis.api.logging.LoggerHelper.logger
+import io.qalipsis.api.meters.CampaignMeterRegistry
 import io.qalipsis.plugins.kafka.Constants
 import io.qalipsis.test.mockk.relaxedMockk
 import org.apache.kafka.clients.consumer.ConsumerConfig
@@ -52,7 +52,7 @@ internal class KafkaEventsPublisherIntegrationTest {
 
     private lateinit var configuration: KafkaEventsConfiguration
 
-    private val meterRegistry: MeterRegistry = relaxedMockk()
+    private val meterRegistry: CampaignMeterRegistry = relaxedMockk()
 
     private val eventsConverter = EventJsonConverter()
 

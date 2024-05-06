@@ -16,68 +16,51 @@
 
 package io.qalipsis.plugins.kafka.meters
 
-import io.micrometer.core.instrument.Clock
-import io.micrometer.core.instrument.Meter
-import io.micrometer.core.instrument.Tag
-import io.micrometer.core.instrument.step.StepMeterRegistry
+import io.micronaut.context.annotation.Requires
 import io.qalipsis.api.lang.tryAndLogOrNull
 import io.qalipsis.api.logging.LoggerHelper.logger
+import io.qalipsis.api.meters.MeasurementPublisher
+import io.qalipsis.api.meters.MeterSnapshot
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization.Serdes
 import java.time.Duration
-import java.util.concurrent.ThreadFactory
-import java.util.concurrent.TimeUnit
 
 /**
- * [io.micrometer.core.instrument.MeterRegistry] for Apache Kafka.
+ * Measurement publisher for Apache Kafka.
  *
  * @author Palina Bril
  */
-internal class KafkaMeterRegistry(
+@Requires(beans = [KafkaMeterConfig::class])
+internal class KafkaMeasurementPublisher(
     private val config: KafkaMeterConfig,
-    clock: Clock
-) : StepMeterRegistry(config, clock) {
+) : MeasurementPublisher {
 
-    private lateinit var producer: Producer<ByteArray, Meter>
+    private lateinit var producer: Producer<ByteArray, MeterSnapshot<*>>
 
-    private val topic = config.topic()
+    private val topic = config.topic
 
-    override fun start(threadFactory: ThreadFactory) {
+    override suspend fun init() {
         producer = KafkaProducer(
             config.configuration(),
             Serdes.ByteArray().serializer(),
-            JsonMeterSerializer(this, baseTimeUnit, config.timestampFieldName())
+            JsonMeterSerializer(config.timestampFieldName)
         )
-        super.start(threadFactory)
     }
-
-    override fun stop() {
+    override suspend fun stop() {
         tryAndLogOrNull(log) {
             producer.close(Duration.ofSeconds(10))
         }
     }
 
-    override fun getBaseTimeUnit(): TimeUnit {
-        return TimeUnit.MILLISECONDS
-    }
-
-    public override fun publish() {
+    override suspend fun publish(meters: Collection<MeterSnapshot<*>>) {
         try {
             meters.stream().forEach { producer.send(ProducerRecord(topic, it)) }
             log.debug { "Successfully sent ${meters.size} meters to Kafka" }
         } catch (e: Throwable) {
             log.error(e) { "Failed to send metrics to Kafka" }
         }
-    }
-
-    fun getName(meter: Meter): String {
-        return getConventionName(meter.id)
-    }
-
-    fun getTags(meter: Meter): MutableList<Tag> {
-        return getConventionTags(meter.id)
     }
 
     private companion object {

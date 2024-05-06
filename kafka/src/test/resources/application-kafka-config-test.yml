@@ -1,8 +1,8 @@
 meters:
   export:
+    enabled: true
     kafka:
       enabled: true
-      step: PT10S
       bootstrap.servers: "kafka-1:9092"
       topic: qalipsis-meters
       linger.ms: 3000

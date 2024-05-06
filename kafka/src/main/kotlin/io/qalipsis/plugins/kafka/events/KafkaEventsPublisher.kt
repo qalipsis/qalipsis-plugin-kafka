@@ -16,14 +16,14 @@
 
 package io.qalipsis.plugins.kafka.events
 
-import io.micrometer.core.instrument.Counter
-import io.micrometer.core.instrument.MeterRegistry
 import io.micronaut.context.annotation.Requires
 import io.qalipsis.api.events.Event
 import io.qalipsis.api.events.EventJsonConverter
 import io.qalipsis.api.events.EventsPublisher
 import io.qalipsis.api.lang.tryAndLogOrNull
 import io.qalipsis.api.logging.LoggerHelper.logger
+import io.qalipsis.api.meters.CampaignMeterRegistry
+import io.qalipsis.api.meters.Counter
 import jakarta.inject.Singleton
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.Producer
@@ -44,7 +44,7 @@ import java.util.Properties
 @Requires(beans = [KafkaEventsConfiguration::class])
 internal class KafkaEventsPublisher(
     private val configuration: KafkaEventsConfiguration,
-    private val meterRegistry: MeterRegistry,
+    private val meterRegistry: CampaignMeterRegistry,
     private val eventsConverter: EventJsonConverter
 ) : EventsPublisher {
 
@@ -60,7 +60,11 @@ internal class KafkaEventsPublisher(
         actualProperties[ProducerConfig.BATCH_SIZE_CONFIG] = configuration.batchSize.toString()
         producer =
             KafkaProducer(actualProperties, Serdes.ByteArray().serializer(), JsonEventSerializer(eventsConverter))
-        counter = meterRegistry.counter(EVENTS_EXPORT_TIMER_NAME)
+        counter = meterRegistry.counter(
+            scenarioName = "",
+            stepName = "",
+            name = EVENTS_EXPORT_TIMER_NAME,
+        )
         super.start()
     }
 
@@ -68,7 +72,7 @@ internal class KafkaEventsPublisher(
         tryAndLogOrNull(log) {
             producer.close(Duration.ofSeconds(10))
         }
-        meterRegistry.remove(counter)
+        meterRegistry.clear()
     }
 
     override fun publish(event: Event) {
