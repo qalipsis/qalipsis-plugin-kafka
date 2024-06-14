@@ -28,7 +28,7 @@ import org.apache.kafka.common.errors.InterruptException
 import org.apache.kafka.common.errors.WakeupException
 import org.apache.kafka.common.serialization.Serdes
 import java.time.Duration
-import java.util.Properties
+import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit

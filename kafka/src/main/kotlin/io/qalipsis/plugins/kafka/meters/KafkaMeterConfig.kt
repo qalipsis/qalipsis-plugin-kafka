@@ -24,7 +24,7 @@ import io.qalipsis.api.config.MetersConfig
 import io.qalipsis.plugins.kafka.meters.KafkaMeterConfig.Companion.KAFKA_CONFIGURATION
 import io.qalipsis.plugins.kafka.meters.KafkaMeterConfig.Companion.KAFKA_ENABLED
 import org.apache.kafka.clients.producer.ProducerConfig
-import java.util.Properties
+import java.util.*
 import javax.validation.constraints.NotBlank
 import kotlin.jvm.optionals.getOrNull
 

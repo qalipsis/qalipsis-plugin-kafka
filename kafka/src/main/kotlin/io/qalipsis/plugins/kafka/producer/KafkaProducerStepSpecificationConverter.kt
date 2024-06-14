@@ -23,7 +23,7 @@ import io.qalipsis.api.steps.StepCreationContext
 import io.qalipsis.api.steps.StepSpecification
 import io.qalipsis.api.steps.StepSpecificationConverter
 import org.apache.kafka.clients.consumer.ConsumerConfig
-import java.util.Properties
+import java.util.*
 
 /**
  * [StepSpecificationConverter] from [KafkaProducerStepSpecificationImpl] to [KafkaProducerStep].

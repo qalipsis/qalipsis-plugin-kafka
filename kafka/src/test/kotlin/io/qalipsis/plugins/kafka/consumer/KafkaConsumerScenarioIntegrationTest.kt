@@ -37,7 +37,7 @@ import org.testcontainers.containers.KafkaContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.utility.DockerImageName
-import java.util.Properties
+import java.util.*
 
 /**
  *

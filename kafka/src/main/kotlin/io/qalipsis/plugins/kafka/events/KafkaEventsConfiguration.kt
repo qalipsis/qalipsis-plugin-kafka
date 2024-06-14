@@ -21,7 +21,7 @@ import io.micronaut.context.annotation.Requires
 import io.qalipsis.api.constraints.PositiveOrZeroDuration
 import io.qalipsis.api.events.EventLevel
 import java.time.Duration
-import java.util.Properties
+import java.util.*
 import javax.validation.constraints.Min
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.NotNull

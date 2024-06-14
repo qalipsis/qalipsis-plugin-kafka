@@ -23,6 +23,11 @@ plugins {
 
 description = "QALIPSIS plugin for Apache Kafka"
 
+kapt {
+    correctErrorTypes = true
+    useBuildCache = false
+}
+
 allOpen {
     annotations(
         "io.micronaut.aop.Around",

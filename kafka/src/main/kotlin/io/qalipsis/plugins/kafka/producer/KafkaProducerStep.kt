@@ -31,7 +31,7 @@ import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.Serializer
 import java.time.Duration
-import java.util.Properties
+import java.util.*
 
 /**
  * Implementation of a [io.qalipsis.api.steps.Step] able to produce a message into Kafka broker.

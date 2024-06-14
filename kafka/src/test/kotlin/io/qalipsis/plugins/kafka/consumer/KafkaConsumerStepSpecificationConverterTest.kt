@@ -51,7 +51,7 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
 import java.time.Duration
-import java.util.Properties
+import java.util.*
 import java.util.regex.Pattern
 
 /**

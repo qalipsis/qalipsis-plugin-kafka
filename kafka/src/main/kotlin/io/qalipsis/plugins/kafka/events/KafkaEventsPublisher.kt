@@ -31,7 +31,7 @@ import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization.Serdes
 import java.time.Duration
-import java.util.Properties
+import java.util.*
 
 /**
  * Implementation of [io.qalipsis.api.events.EventsLogger] for Kafka.

@@ -68,9 +68,9 @@ internal object KafkaConsumerScenario {
                 pollTimeout(100)
                 offsetReset(OffsetResetStrategy.EARLIEST)
             }.flatten(intDeserializer, stringDeserializer)
-            .innerJoin(
-                using = { it.value.record.key },
-                on = {
+            .innerJoin()
+            .using { it.value.record.key }
+            .on {
                     it.kafka()
                         .consume {
                             name = "right-kafka-consumer"
@@ -80,9 +80,8 @@ internal object KafkaConsumerScenario {
                             pollTimeout(100)
                             offsetReset(OffsetResetStrategy.EARLIEST)
                         }.flatten(intDeserializer, stringDeserializer)
-                },
-                having = { it.value.record.key }
-            )
+            }
+            .having { it.value.record.key }
             .map { joinResult -> joinResult?.first?.let { "${it.record.value} - ${joinResult.second.record.value}" } }
             .filterNotNull()
             .onEach { receivedMessages.add(it) }
