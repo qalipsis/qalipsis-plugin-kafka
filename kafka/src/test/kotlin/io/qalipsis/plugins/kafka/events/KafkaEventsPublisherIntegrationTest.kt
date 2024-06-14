@@ -21,7 +21,12 @@ import assertk.assertThat
 import assertk.assertions.containsExactly
 import assertk.assertions.hasSameSizeAs
 import io.mockk.every
-import io.qalipsis.api.events.*
+import io.qalipsis.api.events.Event
+import io.qalipsis.api.events.EventGeoPoint
+import io.qalipsis.api.events.EventJsonConverter
+import io.qalipsis.api.events.EventLevel
+import io.qalipsis.api.events.EventRange
+import io.qalipsis.api.events.EventTag
 import io.qalipsis.api.logging.LoggerHelper.logger
 import io.qalipsis.api.meters.CampaignMeterRegistry
 import io.qalipsis.plugins.kafka.Constants
@@ -31,16 +36,21 @@ import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.apache.kafka.common.serialization.Serdes
-import org.junit.jupiter.api.*
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import org.testcontainers.containers.KafkaContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.utility.DockerImageName
 import java.io.PrintWriter
 import java.nio.charset.StandardCharsets
-import java.time.*
-import java.util.*
+import java.time.Duration
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZonedDateTime
+import java.util.Properties
 import kotlin.math.pow
 
 @Testcontainers

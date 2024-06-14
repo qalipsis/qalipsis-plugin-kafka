@@ -23,8 +23,8 @@ import io.micronaut.core.util.StringUtils
 import io.qalipsis.api.config.MetersConfig
 import io.qalipsis.api.meters.MeasurementPublisher
 import io.qalipsis.api.meters.MeasurementPublisherFactory
-import io.qalipsis.plugins.kafka.meters.KafkaMeterConfig
 import io.qalipsis.plugins.kafka.meters.KafkaMeasurementPublisher
+import io.qalipsis.plugins.kafka.meters.KafkaMeterConfig
 import jakarta.inject.Singleton
 
 /**

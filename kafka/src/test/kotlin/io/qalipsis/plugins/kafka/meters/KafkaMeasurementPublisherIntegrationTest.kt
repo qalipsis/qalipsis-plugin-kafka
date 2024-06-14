@@ -29,7 +29,6 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.PropertySource
-import io.micronaut.context.env.PropertySource as EnvPropertySource
 import io.micronaut.context.env.Environment
 import io.micronaut.core.util.StringUtils
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest
@@ -40,7 +39,6 @@ import io.mockk.mockkStatic
 import io.qalipsis.api.meters.DistributionMeasurementMetric
 import io.qalipsis.api.meters.DistributionSummary
 import io.qalipsis.api.meters.MeasurementMetric
-import io.qalipsis.api.meters.MeterSnapshot as QalipsisMeterSnapshot
 import io.qalipsis.api.meters.MeterType
 import io.qalipsis.api.meters.Statistic
 import io.qalipsis.plugins.kafka.Constants
@@ -72,6 +70,8 @@ import java.time.Instant
 import java.time.ZoneId
 import java.util.Properties
 import kotlin.math.pow
+import io.micronaut.context.env.PropertySource as EnvPropertySource
+import io.qalipsis.api.meters.MeterSnapshot as QalipsisMeterSnapshot
 
 @Testcontainers
 @MicronautTest(startApplication = false)
@@ -241,8 +241,8 @@ internal class KafkaMeasurementPublisherIntegrationTest {
             prop(TimerSnapshot::others).all {
                 hasSize(3)
                 key("tag-2").isEqualTo("value-2")
-                key("percentile_50.0").isEqualTo(5432844.5)
-                key("percentile_85.0").isEqualTo(5.000004485E8)
+                key("percentile_50_0").isEqualTo(5432844.5)
+                key("percentile_85_0").isEqualTo(5.000004485E8)
             }
         }
         assertThat(summarySnapshot).all {
@@ -254,8 +254,8 @@ internal class KafkaMeasurementPublisherIntegrationTest {
             prop(DistributionSummarySnapshot::others).all {
                 hasSize(3)
                 key("tag-4").isEqualTo("value-4")
-                key("percentile_85.0").isEqualTo(548.5)
-                key("percentile_50.0").isEqualTo(54328.5)
+                key("percentile_85_0").isEqualTo(548.5)
+                key("percentile_50_0").isEqualTo(54328.5)
             }
         }
         assertThat(gaugeSnapshot).all {

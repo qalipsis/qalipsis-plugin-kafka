@@ -46,7 +46,8 @@ import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.utility.DockerImageName
 import java.nio.charset.StandardCharsets
 import java.time.Duration
-import java.util.*
+import java.util.Properties
+import java.util.UUID
 import java.util.regex.Pattern
 import kotlin.math.pow
 

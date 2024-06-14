@@ -56,7 +56,9 @@ internal class JsonMeterSerializer(
             val value = it.value
             if (java.lang.Double.isFinite(value)) {
                 write(counterSnapshot) { builder: StringBuilder -> builder.append(",\"count\":").append(value) }
-            } else {write(counterSnapshot) { builder: StringBuilder -> builder }}
+            } else {
+                write(counterSnapshot) { builder: StringBuilder -> builder }
+            }
         }
     }
 
@@ -68,7 +70,9 @@ internal class JsonMeterSerializer(
             val value = it.value
             if (java.lang.Double.isFinite(value)) {
                 write(gaugeSnapshot) { builder: StringBuilder -> builder.append(",\"value\":").append(value) }
-            } else {write(gaugeSnapshot) { builder: StringBuilder -> builder }}
+            } else {
+                write(gaugeSnapshot) { builder: StringBuilder -> builder }
+            }
         }
     }
 
@@ -85,7 +89,8 @@ internal class JsonMeterSerializer(
                 Statistic.MAX -> intermediaryString.append(",\"max\":").append(it.value)
                 Statistic.PERCENTILE -> {
                     it as DistributionMeasurementMetric
-                    intermediaryString.append(",\"percentile_${it.observationPoint}\":").append(it.value)
+                    intermediaryString.append(",\"percentile_${it.observationPoint.toString().replace('.', '_')}\":")
+                        .append(it.value)
                 }
 
                 else -> intermediaryString
@@ -107,8 +112,10 @@ internal class JsonMeterSerializer(
                 Statistic.MAX -> intermediaryString.append(",\"max\":").append(it.value)
                 Statistic.PERCENTILE -> {
                     it as DistributionMeasurementMetric
-                    intermediaryString.append(",\"percentile_${it.observationPoint}\":").append(it.value)
+                    intermediaryString.append(",\"percentile_${it.observationPoint.toString().replace('.', '_')}\":")
+                        .append(it.value)
                 }
+
                 else -> intermediaryString
             }
         }
