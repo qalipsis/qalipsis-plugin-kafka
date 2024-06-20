@@ -37,9 +37,11 @@ import jakarta.inject.Singleton
     Requires(property = MetersConfig.EXPORT_ENABLED, value = StringUtils.TRUE),
     Requires(property = KafkaMeterConfig.KAFKA_ENABLED, value = StringUtils.TRUE)
 )
-internal class KafkaMeasurementPublisherFactory(private val environment: Environment) : MeasurementPublisherFactory {
+internal class KafkaMeasurementPublisherFactory(
+    private val configuration: KafkaMeterConfig
+) : MeasurementPublisherFactory {
     override fun getPublisher(): MeasurementPublisher {
-        return KafkaMeasurementPublisher(config = KafkaMeterConfig(environment))
+        return KafkaMeasurementPublisher(configuration)
     }
 
 }
