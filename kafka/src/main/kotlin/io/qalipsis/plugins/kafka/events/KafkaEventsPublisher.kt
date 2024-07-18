@@ -72,7 +72,6 @@ internal class KafkaEventsPublisher(
         tryAndLogOrNull(log) {
             producer.close(Duration.ofSeconds(10))
         }
-        meterRegistry.clear()
     }
 
     override fun publish(event: Event) {

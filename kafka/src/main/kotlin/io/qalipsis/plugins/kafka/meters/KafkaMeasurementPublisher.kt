@@ -37,7 +37,7 @@ internal class KafkaMeasurementPublisher(
     private val config: KafkaMeterConfig,
 ) : MeasurementPublisher {
 
-    private lateinit var producer: Producer<ByteArray, MeterSnapshot<*>>
+    private lateinit var producer: Producer<ByteArray, MeterSnapshot>
 
     private val topic = config.topic
 
@@ -54,7 +54,7 @@ internal class KafkaMeasurementPublisher(
         }
     }
 
-    override suspend fun publish(meters: Collection<MeterSnapshot<*>>) {
+    override suspend fun publish(meters: Collection<MeterSnapshot>) {
         try {
             meters.stream().forEach { producer.send(ProducerRecord(topic, it)) }
             log.debug { "Successfully sent ${meters.size} meters to Kafka" }
