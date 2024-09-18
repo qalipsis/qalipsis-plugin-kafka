@@ -190,6 +190,45 @@ internal class KafkaMeasurementPublisherIntegrationTest : TestPropertyProvider {
                     DistributionMeasurementMetric(548.5, Statistic.PERCENTILE, 85.0),
                     DistributionMeasurementMetric(54328.5, Statistic.PERCENTILE, 50.0),
                 )
+            },
+            mockk<io.qalipsis.api.meters.MeterSnapshot> {
+                every { timestamp } returns now
+                every { meterId } returns Meter.Id(
+                    "my Rate",
+                    MeterType.RATE,
+                    mapOf(
+                        "scenario" to "fifth scenario",
+                        "campaign" to "campaign 39",
+                        "step" to "step number five",
+                        "foo" to "bar",
+                        "local" to "host"
+                    )
+                )
+                every { measurements } returns listOf(
+                    MeasurementMetric(2.0, Statistic.VALUE)
+                )
+            },
+            mockk<io.qalipsis.api.meters.MeterSnapshot> {
+                every { timestamp } returns now
+                every { meterId } returns Meter.Id(
+                    "throughput",
+                    MeterType.THROUGHPUT,
+                    mapOf(
+                        "scenario" to "sixth scenario",
+                        "campaign" to "CEAD@E28339",
+                        "step" to "step number six",
+                        "a" to "b",
+                        "c" to "d"
+                    )
+                )
+                every { measurements } returns listOf(
+                    MeasurementMetric(30.0, Statistic.VALUE),
+                    MeasurementMetric(22.0, Statistic.MEAN),
+                    MeasurementMetric(173.0, Statistic.TOTAL),
+                    MeasurementMetric(42.0, Statistic.MAX),
+                    DistributionMeasurementMetric(42.0, Statistic.PERCENTILE, 85.0),
+                    DistributionMeasurementMetric(30.0, Statistic.PERCENTILE, 50.0),
+                )
             })
 
         // when
@@ -199,11 +238,11 @@ internal class KafkaMeasurementPublisherIntegrationTest : TestPropertyProvider {
         do {
             val consumed = consumer.poll(Duration.ofSeconds(10)).map(ConsumerRecord<ByteArray, MeterSnapshot>::value)
             publishedValues += consumed
-        } while (publishedValues.size < 4)
+        } while (publishedValues.size < 6)
 
         // then
         assertThat(publishedValues).all {
-            hasSize(4)
+            hasSize(6)
             any {
                 it.isInstanceOf<TimerSnapshot>().all {
                     prop(TimerSnapshot::name).isEqualTo("my timer")
@@ -274,6 +313,44 @@ internal class KafkaMeasurementPublisherIntegrationTest : TestPropertyProvider {
                         key("step").isEqualTo("step number three")
                         key("foo").isEqualTo("bar")
                         key("any-tag").isEqualTo("any-value")
+                    }
+                }
+            }
+            any {
+                it.isInstanceOf<RateSnapshot>().all {
+                    prop(RateSnapshot::name).isEqualTo("my Rate")
+                    prop(RateSnapshot::timestamp).isNotNull().isEqualTo(now)
+                    prop(RateSnapshot::value).isEqualTo(2.0)
+                    prop(RateSnapshot::tags).isNotNull().all {
+                        hasSize(5)
+                        key("campaign").isEqualTo("campaign 39")
+                        key("scenario").isEqualTo("fifth scenario")
+                        key("step").isEqualTo("step number five")
+                        key("foo").isEqualTo("bar")
+                        key("local").isEqualTo("host")
+                    }
+                }
+            }
+            any {
+                it.isInstanceOf<ThroughputSnapshot>().all {
+                    prop(ThroughputSnapshot::name).isEqualTo("throughput")
+                    prop(ThroughputSnapshot::timestamp).isNotNull().isEqualTo(now)
+                    prop(ThroughputSnapshot::sum).isEqualTo(173.0)
+                    prop(ThroughputSnapshot::max).isEqualTo(42.0)
+                    prop(ThroughputSnapshot::mean).isEqualTo(22.0)
+                    prop(ThroughputSnapshot::value).isEqualTo(30.0)
+                    prop(ThroughputSnapshot::tags).isNotNull().all {
+                        hasSize(5)
+                        key("campaign").isEqualTo("CEAD@E28339")
+                        key("scenario").isEqualTo("sixth scenario")
+                        key("step").isEqualTo("step number six")
+                        key("a").isEqualTo("b")
+                        key("c").isEqualTo("d")
+                    }
+                    prop(ThroughputSnapshot::others).all {
+                        hasSize(2)
+                        key("percentile_50_0").isEqualTo(30.0)
+                        key("percentile_85_0").isEqualTo(42.0)
                     }
                 }
             }

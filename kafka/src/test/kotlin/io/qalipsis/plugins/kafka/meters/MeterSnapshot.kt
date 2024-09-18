@@ -28,7 +28,9 @@ import java.util.concurrent.TimeUnit
     JsonSubTypes.Type(value = GaugeSnapshot::class, name = "gauge"),
     JsonSubTypes.Type(value = CounterSnapshot::class, name = "counter"),
     JsonSubTypes.Type(value = TimerSnapshot::class, name = "timer"),
-    JsonSubTypes.Type(value = DistributionSummarySnapshot::class, name = "summary")
+    JsonSubTypes.Type(value = DistributionSummarySnapshot::class, name = "summary"),
+    JsonSubTypes.Type(value = RateSnapshot::class, name = "rate"),
+    JsonSubTypes.Type(value = ThroughputSnapshot::class, name = "throughput")
 )
 abstract class MeterSnapshot(
     val timestamp: Instant,
@@ -58,6 +60,18 @@ class CounterSnapshot(
 
     override fun toString(): String {
         return "Counter(name=$name,  type=$type, tags=$tags, timestamp=$timestamp, count=$count)"
+    }
+}
+
+class RateSnapshot(
+    timestamp: Instant,
+    name: String,
+    tags: Map<String, String>? = null,
+    val value: Double
+) : MeterSnapshot(timestamp, name, "rate", tags) {
+
+    override fun toString(): String {
+        return "Rate(name=$name,  type=$type, tags=$tags, timestamp=$timestamp, value=$value)"
     }
 }
 
@@ -95,5 +109,23 @@ class DistributionSummarySnapshot(
 
     override fun toString(): String {
         return "DistributionSummary(name=$name, type=$type, tags=$tags, timestamp=$timestamp, count=$count, sum=$sum, mean=$mean, max=$max, others=$others)"
+    }
+}
+
+class ThroughputSnapshot(
+    timestamp: Instant,
+    name: String,
+    tags: Map<String, String>? = null,
+    var value: Double,
+    var sum: Double,
+    var mean: Double,
+    var max: Double,
+    @JsonAnySetter
+    @JsonAnyGetter
+    val others: MutableMap<String, Any> = mutableMapOf()
+) : MeterSnapshot(timestamp, name, "throughput", tags) {
+
+    override fun toString(): String {
+        return "Throughput(name=$name, type=$type, tags=$tags, timestamp=$timestamp, value=$value, sum=$sum, mean=$mean, max=$max, others=$others)"
     }
 }
