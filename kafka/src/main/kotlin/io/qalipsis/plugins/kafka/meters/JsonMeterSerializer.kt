@@ -20,6 +20,7 @@ import io.qalipsis.api.meters.DistributionMeasurementMetric
 import io.qalipsis.api.meters.MeterSnapshot
 import io.qalipsis.api.meters.MeterType
 import io.qalipsis.api.meters.Statistic
+import io.qalipsis.api.meters.Throughput
 import io.qalipsis.api.meters.UnsupportedMeterException
 import org.apache.commons.text.StringEscapeUtils
 import org.apache.kafka.common.serialization.Serializer
@@ -41,6 +42,8 @@ internal class JsonMeterSerializer(
             MeterType.COUNTER -> writeCounter(meterSnapshot)
             MeterType.TIMER -> writeTimer(meterSnapshot)
             MeterType.DISTRIBUTION_SUMMARY -> writeSummary(meterSnapshot)
+            MeterType.RATE -> writeRate(meterSnapshot)
+            MeterType.THROUGHPUT -> writeThroughput(meterSnapshot)
             else -> throw UnsupportedMeterException("Meter ${meterSnapshot.meterId} not supported")
         }
         return data.encodeToByteArray()
@@ -120,6 +123,44 @@ internal class JsonMeterSerializer(
         }
 
         return write(summarySnapshot) { builder: StringBuilder -> builder.append(intermediaryString) }
+    }
+
+    /**
+     * Kafka serializer for Rate.
+     */
+    private fun writeRate(rateSnapshot: MeterSnapshot): String {
+        return rateSnapshot.measurements.joinToString(",") {
+            val value = it.value
+            if (java.lang.Double.isFinite(value)) {
+                write(rateSnapshot) { builder: StringBuilder -> builder.append(",\"value\":").append(value) }
+            } else {
+                write(rateSnapshot) { builder: StringBuilder -> builder }
+            }
+        }
+    }
+
+    /**
+     * Kafka serializer for Throughput.
+     */
+    private fun writeThroughput(throughputSnapshot: MeterSnapshot): String {
+        val intermediaryString = StringBuilder()
+        throughputSnapshot.measurements.forEach {
+            when (it.statistic) {
+                Statistic.VALUE -> intermediaryString.append(",\"value\":").append(it.value)
+                Statistic.TOTAL -> intermediaryString.append(",\"sum\":").append(it.value)
+                Statistic.MEAN -> intermediaryString.append(",\"mean\":").append(it.value)
+                Statistic.MAX -> intermediaryString.append(",\"max\":").append(it.value)
+                Statistic.PERCENTILE -> {
+                    it as DistributionMeasurementMetric
+                    intermediaryString.append(",\"percentile_${it.observationPoint.toString().replace('.', '_')}\":")
+                        .append(it.value)
+                }
+
+                else -> intermediaryString
+            }
+        }
+
+        return write(throughputSnapshot) { builder: StringBuilder -> builder.append(intermediaryString) }
     }
 
     /**
