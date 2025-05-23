@@ -50,13 +50,14 @@ internal class KafkaMeasurementPublisher(
     }
     override suspend fun stop() {
         tryAndLogOrNull(log) {
+            producer.flush()
             producer.close(Duration.ofSeconds(10))
         }
     }
 
     override suspend fun publish(meters: Collection<MeterSnapshot>) {
         try {
-            meters.stream().forEach { producer.send(ProducerRecord(topic, it)) }
+            meters.forEach { producer.send(ProducerRecord(topic, it)) }
             log.debug { "Successfully sent ${meters.size} meters to Kafka" }
         } catch (e: Throwable) {
             log.error(e) { "Failed to send metrics to Kafka" }

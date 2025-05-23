@@ -26,6 +26,7 @@ import io.qalipsis.plugins.kafka.meters.KafkaMeterConfig.Companion.KAFKA_ENABLED
 import org.apache.kafka.clients.producer.ProducerConfig
 import java.util.Properties
 import javax.validation.constraints.NotBlank
+import javax.validation.constraints.Positive
 import kotlin.jvm.optionals.getOrNull
 
 
@@ -52,21 +53,28 @@ internal class KafkaMeterConfig(private val environment: Environment) {
     @get:NotBlank
     var timestampFieldName: String = "timestamp"
 
+    @get:NotBlank
+    var serializer: String = "json"
+
+    @get:Positive
+    var lingerMs: Long = 1000
+
     fun configuration(): Properties {
 
         val properties = Properties()
         properties[ProducerConfig.BATCH_SIZE_CONFIG] =
             environment.getProperty("${KAFKA_CONFIGURATION}.batch-size", Int::class.java).getOrNull() ?: 1
         properties[ProducerConfig.LINGER_MS_CONFIG] =
-            environment.getProperty("${KAFKA_CONFIGURATION}.linger.ms", String::class.java).getOrNull() ?: "1000"
+            environment.getProperty("${KAFKA_CONFIGURATION}.linger.ms", String::class.java).getOrNull()
+                ?: lingerMs.toString()
         ProducerConfig.configNames().forEach { producerConfigKey ->
             environment.getProperty("${KAFKA_CONFIGURATION}.configuration.$producerConfigKey", String::class.java)
-                .orElse(null)?.let { configValue ->
+                .ifPresent { configValue ->
                     properties[producerConfigKey] = configValue
                 }
         }
         properties[ProducerConfig.BOOTSTRAP_SERVERS_CONFIG] =
-            environment.getProperty("${KAFKA_CONFIGURATION}.bootstrap.servers", String::class.java).getOrNull()
+            environment.getProperty("${KAFKA_CONFIGURATION}.bootstrap", String::class.java).getOrNull()
                 ?: "localhost:9092"
         return properties
     }

@@ -90,7 +90,7 @@ internal class KafkaMeasurementPublisherIntegrationTest : TestPropertyProvider {
     override fun getProperties(): Map<String, String> {
         bootstrapServers = CONTAINER.bootstrapServers.substringAfter("PLAINTEXT://")
         return mapOf(
-            "${KafkaMeterConfig.KAFKA_CONFIGURATION}.bootstrap.servers" to bootstrapServers,
+            "${KafkaMeterConfig.KAFKA_CONFIGURATION}.bootstrap" to bootstrapServers,
             "${KafkaMeterConfig.KAFKA_CONFIGURATION}.topic" to "the-topic-for-measurements"
         )
     }
