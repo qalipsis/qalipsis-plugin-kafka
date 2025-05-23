@@ -60,16 +60,13 @@ internal class KafkaEventsPublisher(
         actualProperties[ProducerConfig.BATCH_SIZE_CONFIG] = configuration.batchSize.toString()
         producer =
             KafkaProducer(actualProperties, Serdes.ByteArray().serializer(), JsonEventSerializer(eventsConverter))
-        counter = meterRegistry.counter(
-            scenarioName = "",
-            stepName = "",
-            name = EVENTS_EXPORT_TIMER_NAME,
-        )
+        counter = meterRegistry.counter(EVENTS_EXPORT_TIMER_NAME)
         super.start()
     }
 
     override fun stop() {
         tryAndLogOrNull(log) {
+            producer.flush()
             producer.close(Duration.ofSeconds(10))
         }
     }

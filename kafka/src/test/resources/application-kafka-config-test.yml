@@ -3,7 +3,7 @@ meters:
     enabled: true
     kafka:
       enabled: true
-      bootstrap.servers: "kafka-1:9092"
+      bootstrap: "kafka-1:9092"
       topic: qalipsis-meters
       linger.ms: 3000
       batch-size: 500
