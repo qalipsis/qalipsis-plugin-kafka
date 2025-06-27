@@ -20,7 +20,6 @@ import io.qalipsis.api.meters.DistributionMeasurementMetric
 import io.qalipsis.api.meters.MeterSnapshot
 import io.qalipsis.api.meters.MeterType
 import io.qalipsis.api.meters.Statistic
-import io.qalipsis.api.meters.Throughput
 import io.qalipsis.api.meters.UnsupportedMeterException
 import org.apache.commons.text.StringEscapeUtils
 import org.apache.kafka.common.serialization.Serializer
@@ -58,7 +57,7 @@ internal class JsonMeterSerializer(
             if (java.lang.Double.isFinite(value)) {
                 write(counterSnapshot) { builder: StringBuilder -> builder.append(",\"count\":").append(value) }
             } else {
-                write(counterSnapshot) { builder: StringBuilder -> builder }
+                write(counterSnapshot) { }
             }
         }
     }
@@ -72,7 +71,7 @@ internal class JsonMeterSerializer(
             if (java.lang.Double.isFinite(value)) {
                 write(gaugeSnapshot) { builder: StringBuilder -> builder.append(",\"value\":").append(value) }
             } else {
-                write(gaugeSnapshot) { builder: StringBuilder -> builder }
+                write(gaugeSnapshot) { }
             }
         }
     }
@@ -134,7 +133,7 @@ internal class JsonMeterSerializer(
             if (java.lang.Double.isFinite(value)) {
                 write(rateSnapshot) { builder: StringBuilder -> builder.append(",\"value\":").append(value) }
             } else {
-                write(rateSnapshot) { builder: StringBuilder -> builder }
+                write(rateSnapshot) { }
             }
         }
     }
